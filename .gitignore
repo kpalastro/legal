@@ -1,0 +1,31 @@
+# Virtualenv and tooling
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Local editor/agent settings. `settings.local.json` is per-machine: it records
+# permission grants made on one developer's checkout and has no business in a
+# repository that others clone.
+.claude/settings.local.json
+
+# Deployment state must never be committed. `infra/` is a skeleton today, but
+# Terraform state holds resource ids and, in some providers, secrets in clear.
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Node (the authoring surface, when it exists)
+node_modules/
+ui/dist/
+
+# OS noise
+.DS_Store

@@ -1,0 +1,215 @@
+# =============================================================================
+# Verification cases: can a claim be grounded in the words of a judgment?
+# =============================================================================
+#
+# This is the guardrail suite, and it is the one that matters most in production.
+# Everything upstream -- retrieval, the rule engine, the credence network -- is
+# built to produce fluent, well-formed, confident output. This layer exists to
+# refuse it when the words are not there.
+#
+# The cases marked `expect_refusal: true` are the ones where the *only* correct
+# behaviour is to decline. They are scored differently from ordinary cases: a
+# single failure to refuse fails the suite outright, however many other cases
+# pass. That asymmetry is deliberate. A system that grounds 99 quotes out of 100
+# and invents the hundredth is not 99 per cent correct; it is a system that
+# fabricates authority, and the fabrication will be in the one paragraph a
+# partner relies on.
+#
+# The near-miss cases are the important ones. Anyone can write a test that
+# rejects an obvious fabrication. These test the paraphrase that reads better
+# than the original, and the real sentence attributed to the wrong paragraph --
+# both of which are exactly what a language model produces when it summarises.
+# =============================================================================
+
+id: ratio.grounding.guardrails
+title: Citation grounding -- fail-closed guardrails
+domain: verification
+version: "1"
+
+cases:
+  # -- claims that must be supported ----------------------------------------
+
+  - id: verify-exact-quote
+    kind: verification
+    prompt: >
+      Bramblewood held that the power to nominate one of six directors is a
+      minority power.
+    expected: supported
+    claim:
+      text: >
+        The Full Court held that a right to nominate a single director of six
+        does not confer control of the board.
+      quotes:
+        - judgment: au/fcafc/2019/77
+          paragraph: 7
+          judge: Halloran J
+          quote: The power to nominate one of six directors is a minority power.
+      citations:
+        - "[2019] FCAFC 77"
+    authority: "FCAFC:2019:77"
+    notes: >
+      The baseline positive case. A verifier that cannot pass this one is not
+      functioning at all, so it is here to make the guardrail cases meaningful:
+      the suite has to be passable.
+
+  - id: verify-quote-with-leading-context
+    kind: verification
+    prompt: The High Court described the association question as one of substance.
+    expected: supported
+    claim:
+      text: >
+        In Yarrow the High Court held that the association question is one of
+        substance, not form.
+      quotes:
+        - judgment: au/hca/2016/12
+          paragraph: 7
+          judge: Fenwick J
+          quote: >
+            It is not necessary that those wishes be enforceable, or that they
+            be communicated in any particular form.
+      citations:
+        - "[2016] HCA 12"
+    authority: "HCA:2016:12"
+    notes: >
+      A multi-line quote against a paragraph whose text wraps in the source. The
+      normalisation path has to strip the wrapping without loosening the match,
+      and this case is where that is checked.
+
+  # -- fabrications that must be refused -----------------------------------
+  #
+  # Each of these is a plausible sentence about the right subject matter. None of
+  # them appears in the corpus. A retrieval-grounded summariser will produce
+  # sentences like these constantly, and every one of them is a misquotation of a
+  # court.
+
+  - id: verify-inverted-holding
+    kind: verification
+    prompt: >
+      The Full Court held that a minority board nomination right does elevate a
+      minority holding into a substantial interest.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: >
+        Bramblewood establishes that a minority board nomination right is
+        sufficient to elevate a minority holding into a substantial interest.
+      quotes:
+        - judgment: au/fcafc/2019/77
+          paragraph: 7
+          judge: Halloran J
+          quote: >
+            A minority board nomination right does elevate a minority holding
+            into a substantial interest.
+      citations:
+        - "[2019] FCAFC 77"
+    authority: "FCAFC:2019:77"
+    notes: >
+      The quote is the inverse of what the court said, and it is attributed to
+      the right paragraph with the right citation. Nothing but the span check
+      catches this. It is the failure mode the fail-closed design exists for:
+      inverted authority, presented in the register of a quotation.
+
+  - id: verify-paraphrase-that-reads-better
+    kind: verification
+    prompt: Bramblewood held that the Act does not equate influence with interest.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: >
+        The Full Court held that the Act does not equate influence with interest.
+      quotes:
+        - judgment: au/fcafc/2019/77
+          paragraph: 7
+          judge: Halloran J
+          quote: The Act does not equate influence with interest.
+      citations:
+        - "[2019] FCAFC 77"
+    authority: "FCAFC:2019:77"
+    notes: >
+      Read the claimed words against what the court actually wrote at [7]:
+      "Nothing in the Act equates influence with interest." Every content word
+      matches. The sentence has been silently rewritten into the register of a
+      holding -- a summariser's instinct, and a plausible thing for a competent
+      lawyer to write in a memo. It is still a quotation that the court never
+      made, and a token-overlap verifier calls it grounded. Quote verification
+      that cannot tell a paraphrase from a quotation is not verification.
+
+  - id: verify-right-words-wrong-paragraph
+    kind: verification
+    prompt: >
+      The court said that the power to nominate one of six directors is a
+      minority power.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: >
+        The court described the nomination power as a minority power.
+      quotes:
+        - judgment: au/fcafc/2019/77
+          paragraph: 2
+          judge: Halloran J
+          quote: The power to nominate one of six directors is a minority power.
+      citations:
+        - "[2019] FCAFC 77"
+    authority: "FCAFC:2019:77"
+    notes: >
+      The words are in the judgment, so any check against the document as a whole
+      passes it. They are not in paragraph 2, which is where the claim says they
+      are. Paragraph-anchored verification is what makes this an error rather
+      than a stylistic quibble, and paragraph anchoring is the discipline that
+      makes the whole knowledge base auditable.
+
+  # -- citations that cannot be checked ------------------------------------
+
+  - id: verify-citation-not-in-corpus
+    kind: verification
+    prompt: The point is settled by authority.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: The point is settled by a line of Full Court authority.
+      citations:
+        - "[2015] FCAFC 999"
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+    notes: >
+      The citation is well-formed and does not exist. The correct outcome is a
+      refusal, not a pass: "we have not ingested this" is not "this is sound", and
+      a system that reports an unheld authority as verified is one whose
+      verification means nothing.
+
+  - id: verify-uncited-claim
+    kind: verification
+    prompt: The acquisition is not notifiable.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: On these facts the acquisition is not a notifiable action.
+      citations: []
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+    notes: >
+      No quote and no citation. An uncited claim is not a clean claim -- the
+      verifier's rule is that a claim it cannot check is a claim it does not
+      support. This is the single easiest guardrail to lose, because the claim is
+      true and the system knows it is true; being right is not the same as being
+      supported by a source you can point at.
+
+  - id: verify-quote-from-wrong-judgment
+    kind: verification
+    prompt: Yarrow held that a minority nomination right is a minority power.
+    expected: __refused__
+    expect_refusal: true
+    claim:
+      text: The High Court in Yarrow addressed the significance of board nomination rights.
+      quotes:
+        - judgment: au/hca/2016/12
+          paragraph: 7
+          judge: Fenwick J
+          quote: The power to nominate one of six directors is a minority power.
+      citations:
+        - "[2016] HCA 12"
+    authority: "HCA:2016:12"
+    notes: >
+      A real quote from the corpus, attached to the wrong case. Halloran J wrote
+      that sentence in Bramblewood; Fenwick J never did. Attribution errors of
+      this kind are more damaging than invented quotations, precisely because
+      they survive every check that looks only at the words.

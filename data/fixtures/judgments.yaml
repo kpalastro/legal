@@ -1,0 +1,364 @@
+# =============================================================================
+# SYNTHETIC FIXTURE CORPUS -- NOT LAW. DO NOT CITE.
+# =============================================================================
+#
+# Every judgment below is INVENTED for this repository. The cases, parties,
+# judges, facts and reasoning do not exist. They use realistic neutral-citation
+# formats and the names of real Commonwealth Acts with real section numbers, so
+# that the ingest, citation-graph and rule-encoding machinery is exercised
+# against material shaped like the real thing.
+#
+# Two specific warnings:
+#
+#   1. The summaries of statutory provisions in these judgments are ILLUSTRATIVE
+#      PARAPHRASES written for the fixture. They are not the text of any Act and
+#      must not be relied on. A real system ingests the compiled Act as a
+#      versioned StatutoryProvision and quotes it.
+#
+#   2. The reasoning attributed to the courts is fabricated. No inference should
+#      be drawn about how any Australian court would decide anything.
+#
+# Every judgment carries `synthetic: true`. The loader surfaces that flag in all
+# output, and refuses to build a mixed index of synthetic and real authorities
+# unless explicitly overridden, so a fixture cannot quietly sit alongside real
+# law in a production index.
+#
+# The corpus is deliberately shaped to exercise the hard parts of the graph:
+#
+#   [2016] HCA 12      apex authority
+#   [2019] FCAFC 77    applies the apex authority; has a DISSENT (judge-scoped anchors)
+#   [2020] FCA 340     follows [2019] FCAFC 77
+#   [2021] FCA 1188    DISTINGUISHES [2019] FCAFC 77
+#   [2022] FCAFC 205   DOUBTS [2020] FCA 340; approves [2019] FCAFC 77
+#   [2023] FedCFamC2G 412  does NOT follow [2022] FCAFC 205 -- from a court too
+#                      junior to bind it, which is exactly the case the
+#                      hierarchy gate in kb/graph.py is there to catch
+#   [2024] FCA 660     applies [2022] FCAFC 205 and [2016] HCA 12
+# =============================================================================
+
+judgments:
+  - id: au/hca/2016/12
+    neutral_citation: "[2016] HCA 12"
+    title: Yarrow v Minister for Foreign Investment
+    court: HCA
+    jurisdiction: Cth
+    date_decided: 2016-05-11
+    catchwords:
+      - "Foreign investment — foreign person — associates — substance over form"
+      - "Statutory construction — beneficial purpose — protective legislation"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Fenwick J
+        role: majority
+        text: |
+          Background
+
+          [1] The appellant is a resident of Singapore. In March 2013 she acquired 18.4 per cent of the issued shares in Corin Forest Pty Ltd, a company incorporated in New South Wales which holds pastoral leases in the Northern Territory. She did not notify the respondent Minister of the acquisition.
+
+          [2] Meridian Sovereign Holdings Pte Ltd, a company incorporated in Singapore, held a further 6.2 per cent of the shares in Corin Forest. The Minister concluded that the appellant and Meridian were associates, that their holdings were therefore to be aggregated, and that the resulting interest exceeded the threshold at which the acquisition became notifiable. On that footing the Minister made an order under s 20 of the Foreign Acquisitions and Takeovers Act 1975 (Cth) (the Act).
+
+          [3] The primary judge upheld the Minister's construction of the association provisions. The appellant contends that the primary judge erred by treating the commercial substance of the relationship between the appellant and Meridian as sufficient, when the Act requires the existence of a legally enforceable arrangement.
+
+          The statutory framework
+
+          [4] Section 4 of the Act identifies the persons who are foreign persons for its purposes. Section 5 provides that two or more persons are associates of one another in a range of circumstances, including where they are acting, or are accustomed to act, in accordance with the directions or wishes of one of them. Section 6 identifies when an action is a significant action, and s 18 when such an action is notifiable. Section 26 identifies a foreign government investor by reference to the extent of a foreign government's interest.
+
+          [5] The appellant submits that the phrase "in accordance with the directions or wishes of another" imports a requirement of legal obligation. In her submission, a pattern of consultation falling short of contractual compulsion cannot suffice. That submission should be rejected.
+
+          [6] The Act is protective. Its object is to ensure that the Treasurer has an opportunity to consider proposed acquisitions of Australian assets by foreign persons before they are completed. That object would be defeated in a great many cases if the section operated only where a legally enforceable obligation could be identified. Parties who wish to avoid scrutiny rarely commit their arrangements to writing.
+
+          [7] Accordingly, the question posed by s 5 is one of substance. The inquiry is whether, as a matter of practical reality, one person's conduct in relation to the relevant holding is to be explained by the wishes of the other. It is not necessary that those wishes be enforceable, or that they be communicated in any particular form.
+
+          [8] It follows that a nominee arrangement, an informal understanding, or a course of dealing from which a shared intention can be inferred may establish an association. The absence of documentation is a matter of evidence, not an element of the test.
+
+          Orders
+
+          [9] The appeal should be dismissed with costs.
+      - judge: Alderice J
+        role: concurring
+        text: |
+          [1] I agree that the appeal should be dismissed, and with the reasons of Fenwick J, but I would add this. The construction the appellant urges would confine s 5 to cases in which the parties had taken the trouble to create an enforceable obligation. The practical consequence would be that the more calculated the arrangement, the less likely it is to attract the Act.
+
+          [2] I would prefer to say no more than that.
+    orders:
+      - "Appeal dismissed with costs."
+
+  - id: au/fcafc/2019/77
+    neutral_citation: "[2019] FCAFC 77"
+    title: Bramblewood Nominees Pty Ltd v Minister for Foreign Investment
+    court: FCAFC
+    jurisdiction: Cth
+    date_decided: 2019-06-04
+    catchwords:
+      - "Foreign investment — substantial interest — board nomination rights"
+      - "Associates — aggregation of holdings"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Halloran J
+        role: majority
+        text: |
+          Background
+
+          [1] The appellant holds 17.3 per cent of the issued shares in Tamarind Agriculture Ltd, an Australian company with substantial landholdings in northern Queensland. Under a shareholders' agreement, and because of that holding, the appellant has the right to nominate one of six directors.
+
+          [2] The Minister determined that the appellant held a substantial interest in Tamarind Agriculture and that its acquisition was accordingly a notifiable action. The primary judge dismissed the appellant's challenge. The appellant appeals.
+
+          The relevant authorities
+
+          [3] In Yarrow v Minister for Foreign Investment [2016] HCA 12 the High Court held that the association provisions of the Act are to be applied as a question of substance rather than form, and that the absence of an enforceable arrangement is not fatal to a finding of association.
+
+          [4] The Minister relies on that decision, and on the proposition that it establishes a general approach of looking to practical realities wherever the Act uses ownership-based concepts and applies it without distinction.
+
+          [5] Yarrow was not concerned with the construction of the substantial interest provisions. It was concerned with association. The reasoning of the Court in that case is to be applied in accordance with its subject matter. The proposition that it displaces the statutory language wherever the Act refers to interests is one the Court did not decide, and which should not be attributed to it.
+
+          Application
+
+          [6] The appellant holds less than twenty per cent of the issued shares. It therefore does not hold a substantial interest by reason of the quantum of its shareholding alone.
+
+          [7] The Minister submits that the right to nominate a director, taken with the size of the holding, produces a substantial interest. I do not accept that submission. The power to nominate one of six directors is a minority power. It does not confer control of the board, and it does not give the appellant a capacity to determine the financial and operating policies of the company. Nothing in the Act equates influence with interest.
+
+          [8] The appeal should be allowed.
+
+          Orders
+
+          [9] I would set aside the orders of the primary judge and in their place determine that the acquisition was not a notifiable action.
+      - judge: Wren J
+        role: majority
+        text: |
+          [1] I have had the advantage of reading the reasons of Halloran J. I agree that the appeal should be allowed, and with his Honour's reasons on the association question.
+
+          [2] I add only that the Minister's construction would produce a result in which an interest of a few per cent, coupled with an entitlement to have a view heard at board level, would attract the notification regime. The Act does not reach so far, and there is no occasion to strain its language to make it do so.
+      - judge: Sanderson J
+        role: dissent
+        text: |
+          [1] I have had the advantage of reading the reasons of Halloran J. I regret that I take a different view.
+
+          [2] The reasoning in Yarrow v Minister for Foreign Investment [2016] HCA 12 is directed at substance. The shareholder's agreement in this case is part of a deliberately structured arrangement under which one foreign person obtains a seat at the table of an Australian agricultural enterprise.
+
+          [3] The inquiry the Act directs is not whether the appellant can control the company. It is whether the appellant holds a substantial interest in it. A holding of 17.3 per cent, coupled with a contractual right to a board position, is in my view substantial. The decision of the primary judge was correct and the appeal should be dismissed.
+    orders:
+      - "Appeal allowed. Orders of the primary judge set aside."
+      - "Declaration that the acquisition was not a notifiable action."
+
+  - id: au/fca/2020/340
+    neutral_citation: "[2020] FCA 340"
+    title: Corvus Capital Partners Pty Ltd v Minister for Foreign Investment
+    court: FCA
+    jurisdiction: Cth
+    date_decided: 2020-04-17
+    catchwords:
+      - "Foreign investment — substantial interest — follow Full Court authority"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Okonjo J
+        role: sole
+        text: |
+          [1] The applicant holds 19.6 per cent of the issued shares in Bellamy Pastoral Holdings Pty Ltd and has the right to appoint one of five directors. It seeks a declaration that its proposed further acquisition is not a notifiable action.
+
+          [2] The point is governed by the decision of the Full Court in Bramblewood Nominees Pty Ltd v Minister for Foreign Investment [2019] FCAFC 77. There the Full Court held that a holding short of twenty per cent, coupled with a right to nominate a minority of the board, does not of itself confer a substantial interest.
+
+          [3] I am bound to follow that decision and I respectfully agree with it. The Full Court's construction gives effect to the language of the Act while avoiding a result in which ordinary minority holdings are swept into a notification regime intended for acquisitions of control.
+
+          [4] The Minister did not contend that the present facts are materially distinguishable from Bramblewood. The holding here is larger and the board representation proportionally smaller, but neither difference takes the case outside the principle.
+
+          [5] The Minister also relied on the reasoning in Yarrow v Minister for Foreign Investment [2016] HCA 12. For the reasons given by Halloran J in Bramblewood, that reliance is misplaced. Yarrow concerned association, not the substantial interest provisions.
+
+          [6] There will be a declaration in the terms sought.
+    orders:
+      - "Declaration that the proposed acquisition is not a notifiable action."
+
+  - id: au/fca/2021/1188
+    neutral_citation: "[2021] FCA 1188"
+    title: Sandlewood Group Pty Ltd v Minister for Foreign Investment
+    court: FCA
+    jurisdiction: Cth
+    date_decided: 2021-10-05
+    catchwords:
+      - "Foreign investment — substantial interest — distinguishing Bramblewood"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Petrakis J
+        role: sole
+        text: |
+          [1] The applicant holds 14.1 per cent of the issued shares in Ridgeline Water Holdings Pty Ltd. It says that Bramblewood Nominees Pty Ltd v Minister for Foreign Investment [2019] FCAFC 77 establishes that a holding of that size cannot be a substantial interest.
+
+          [2] The submission misreads the decision. In Bramblewood the Full Court was concerned with a holding that was real. Here the Minister has led evidence, which I accept, that the shareholding recorded in the register is not held by the applicant within the meaning of the Act at all, but by a nominee for a person who has agreed to hold the shares at the direction of a third party pending completion of a development approval.
+
+          [3] The case is in my view distinguishable from Bramblewood. The Full Court there determined the significance of a genuinely held minority interest. It did not determine the treatment of an interest that is structured so as to be recorded in a name other than that of the person for whose benefit it is held.
+
+          [4] Once the beneficial position is understood, the aggregation provisions operate and the threshold is exceeded. The acquisition was a notifiable action.
+
+          [5] The application is dismissed.
+    orders:
+      - "Application dismissed with costs."
+
+  - id: au/fcafc/2022/205
+    neutral_citation: "[2022] FCAFC 205"
+    title: Minister for Foreign Investment v Kingsford Quay Pty Ltd
+    court: FCAFC
+    jurisdiction: Cth
+    date_decided: 2022-11-22
+    catchwords:
+      - "Foreign investment — substantial interest — correctness of Bramblewood"
+      - "Precedent — departure from earlier Full Court decision"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Nkemelu J
+        role: majority
+        text: |
+          [1] The Minister appeals from a decision of a single judge of this Court, Corvus Capital Partners Pty Ltd v Minister for Foreign Investment [2020] FCA 340, in which the primary judge applied Bramblewood Nominees Pty Ltd v Minister for Foreign Investment [2019] FCAFC 77 to uphold a challenge to a notification decision.
+
+          [2] We have had the considerable advantage of full argument on the correctness of Bramblewood, which the parties in that case did not have the opportunity to present.
+
+          [3] Bramblewood was correctly decided and we would follow it. Its construction of the substantial interest provisions is consistent with the text of the Act, with its protective purpose, and with the reasoning of the High Court in Yarrow v Minister for Foreign Investment [2016] HCA 12 concerning the approach to be taken to ownership-based concepts in the Act. The Full Court in Bramblewood was right to hold that a minority board nomination right does not, without more, convert a minority shareholding into a substantial interest, and it was right to decline to extend Yarrow beyond its subject matter.
+
+          [4] To the extent that the primary judge in Corvus expressed the test in terms that would treat any capacity to influence the board as elevating a minority holding into a substantial interest, that expression is not consistent with Bramblewood and should not be followed. The reasoning in that respect is, with respect, wrong.
+
+          [5] We note for completeness that the decision in Yarrow was concerned with the association provisions. Nothing in this judgment should be taken as diminishing the force of what the High Court said in that case about substance and form in the application of s 5.
+
+          [6] It follows that the appeal must be allowed in part.
+    orders:
+      - "Appeal allowed in part."
+      - "The declaration made by the primary judge is set aside."
+
+  - id: au/fedcfamc2g/2023/412
+    neutral_citation: "[2023] FedCFamC2G 412"
+    title: Ostend Pty Ltd v Minister for Foreign Investment
+    court: FedCFamC2G
+    jurisdiction: Cth
+    date_decided: 2023-07-14
+    catchwords:
+      - "Foreign investment — substantial interest — refusal to follow Full Court"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Trenowden J
+        role: sole
+        text: |
+          [1] The applicant seeks review of a decision that its acquisition of a 16.8 per cent interest in a North Queensland agriculture business was a notifiable action.
+
+          [2] The Minister relies upon Minister for Foreign Investment v Kingsford Quay Pty Ltd [2022] FCAFC 205, in which the Full Court declined to cast doubt on Bramblewood Nominees Pty Ltd v Minister for Foreign Investment [2019] FCAFC 77.
+
+          [3] I have formed the view that the reasoning of the High Court in Yarrow v Minister for Foreign Investment [2016] HCA 12 is not capable of being confined in the manner the Full Court has confined it, and I do not propose to follow Kingsford Quay.
+
+          [4] I accept that this Court is not able to depart from a decision of a superior court in the same hierarchy, and that this judgment will not disturb the authority of Kingsford Quay or of Bramblewood.
+
+          [5] Nonetheless, applying the substance of what the High Court said in Yarrow, and treating the practical realities of the arrangement as decisive, I would hold that the acquisition was a notifiable action and that the Minister's decision was correct.
+    orders:
+      - "Application dismissed."
+
+  - id: au/fca/2024/660
+    neutral_citation: "[2024] FCA 660"
+    title: Halcyon Ridge Pty Ltd v Minister for Foreign Investment
+    court: FCA
+    jurisdiction: Cth
+    date_decided: 2024-06-03
+    catchwords:
+      - "Foreign investment — foreign government investor — national interest"
+    synthetic: true
+    source:
+      kind: synthetic
+      licence: "Synthetic fixture written for the RATIO repository. Not law."
+    reasons:
+      - judge: Marchetti J
+        role: sole
+        text: |
+          Background
+
+          [1] Halcyon Ridge Pty Ltd proposes to acquire 100 per cent of the issued shares in Kestrel Analytics Pty Ltd, an Australian company which provides data analytics services to Commonwealth agencies and holds a facility security clearance. Halcyon Ridge is itself 63 per cent owned by a sovereign wealth fund.
+
+          [2] The Minister determined that the acquisition was a notifiable action and, on a preliminary basis pending the outcome of a national security assessment under s 26 of the Foreign Acquisitions and Takeovers Act 1975 (Cth), refused consent. Halcyon Ridge challenges the determination that the acquisition was notifiable.
+
+          Was the acquisition a substantial interest?
+
+          [3] There is no dispute that Halcyon Ridge is a foreign person within the meaning of s 4 of the Act. Nor is there any dispute that a sovereign wealth fund holding 63 per cent of its shares engages the foreign government investor provisions in s 26.
+
+          [4] The Minister also contends that the association provisions are engaged, relying on Yarrow v Minister for Foreign Investment [2016] HCA 12. The evidence establishes that a third shareholder, which holds 4.9 per cent, has at all material times acted in accordance with the wishes of the sovereign wealth fund in respect of voting at general meetings, and has done so over a course of years. That is precisely the substance of the arrangement to which the High Court adverted in Yarrow. I have no difficulty in finding that the association provisions apply.
+
+          [5] The Minister further relies on the reasoning of the Full Court in Minister for Foreign Investment v Kingsford Quay Pty Ltd [2022] FCAFC 205. That case concerned a minority shareholder's board nomination rights, as did Bramblewood Nominees Pty Ltd v Minister for Foreign Investment [2019] FCAFC 77, which Kingsford Quay adopted and approved. Neither case involved a nominee arrangement of the kind now before me, and both are to be applied consistently with what the High Court held in Yarrow.
+
+          [6] Here the applicant seeks a controlling interest, and the aggregation question goes only to whether the association threshold was crossed. For the reasons given in Kingsford Quay, applied to these facts, it was.
+
+          The interest of the Minister
+
+          [7] The Minister's determination that the acquisition was notifiable was correct. The assessment of the national interest, which remains on foot, is a matter for the Treasurer and is not a matter for this Court. I note only that the subject matter of the target business and the identity of the acquirer are both factors capable of bearing on that assessment.
+
+          [8] The application is dismissed.
+    orders:
+      - "Application dismissed with costs."
+
+# ---------------------------------------------------------------------------
+# Statutory provisions relied on by the corpus.
+#
+# `text` below is an ILLUSTRATIVE PARAPHRASE written for this fixture and is not
+# the text of any Act. In a production ingest these are replaced by the actual
+# compiled provision, keyed to the compilation date relied on, so that a rule
+# can be checked against the law as it stood on the day it was approved.
+# ---------------------------------------------------------------------------
+provisions:
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "4"
+    heading: Meaning of foreign person
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] Defines a foreign person to include an individual not ordinarily resident in Australia, a corporation in which a foreign person holds a substantial interest, a foreign government, and a foreign government investor."
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "5"
+    heading: Meaning of associate
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] Two persons are associates if, among other things, they act or are accustomed to act in accordance with the directions or wishes of one of them."
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "6"
+    heading: Meaning of significant action
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] A significant action is an action to acquire an interest in Australian land, securities in a corporation, or a business, where the interest or the action exceeds prescribed thresholds."
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "18"
+    heading: Meaning of notifiable action
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] A significant action is a notifiable action unless it is an exempt action, is covered by an exemption certificate, or is excluded by the regulations."
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "20"
+    heading: Orders
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] Empowers the Treasurer to make orders in relation to notifiable actions and significant actions, including prohibition and disposal orders."
+  - act_title: Foreign Acquisitions and Takeovers Act 1975
+    act_year: 1975
+    jurisdiction: Cth
+    section: "26"
+    heading: Meaning of foreign government investor
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] A foreign government investor includes a foreign government or a separate government entity holding a substantial interest in a corporation, or an entity in which one or more foreign governments hold an aggregate substantial interest."
+  - act_title: Corporations Act 2001
+    act_year: 2001
+    jurisdiction: Cth
+    section: "674"
+    heading: Continuous disclosure — listed disclosing entities
+    compiled_as_at: 2016-05-11
+    text: "[Illustrative paraphrase, not statutory text] Requires a listed disclosing entity to notify the market operator of information that is not generally available and that a reasonable person would expect, if it were generally available, to have a material effect on the price or value of its securities."

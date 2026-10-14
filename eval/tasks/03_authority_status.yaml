@@ -1,0 +1,143 @@
+# =============================================================================
+# Treatment cases: is this authority still good law?
+# =============================================================================
+#
+# These cases test the citator, which is the part of the system most likely to be
+# wrong in a way nobody notices. Retrieval returns a case; the treatment layer is
+# what tells the lawyer whether the case is still worth citing. Get it wrong in
+# the negative direction and you invent a bad-law finding against a decision no
+# court has doubted; get it wrong in the positive direction and you present an
+# overruled authority as sound.
+#
+# The corpus is built so that the interesting cases are the ones where a
+# *subordinate* court has disagreed. Three of the seven judgments express their
+# view of an earlier one from a court below the one they are treating. Those
+# edges are real, they are in the corpus, and they must not move the status --
+# which is why the expected values below look, to a reader who has not seen the
+# graph, as though the system ignored evidence.
+#
+# Expected values are the *legal* position: what a competent practitioner would
+# say about the authority, given the corpus. Where the corpus genuinely admits
+# two answers, both are listed.
+# =============================================================================
+
+id: ratio.authority_status.cases
+title: Authority status -- treatment in the citation graph
+domain: treatment
+version: "1"
+
+cases:
+  - id: authority-followed-by-full-court
+    kind: treatment
+    prompt: Is Bramblewood still good law?
+    expected: good_law
+    authority: "FCAFC:2022:205"
+    claim:
+      key: "FCAFC:2019:77"
+    notes: >
+      The Full Court in Kingsford Quay said of Bramblewood, at [3]: "Bramblewood
+      was correctly decided and we would follow it." A Full Court following an
+      earlier Full Court decision, on full argument and with the benefit of
+      argument the earlier case did not have, is about as clear a positive
+      treatment as the corpus contains.
+
+  - id: authority-first-instance-refusal-is-not-overruling
+    kind: treatment
+    prompt: Is Kingsford Quay still good law?
+    expected: good_law
+    also_accept:
+      - uncertain
+    authority: "FedCFamC2G:2023:412"
+    claim:
+      key: "FCAFC:2022:205"
+    notes: >
+      The single most important case in this suite, and the reason the hierarchy
+      gate exists. A judge of the Federal Circuit and Family Court declined to
+      follow Kingsford Quay at [3]: "I do not propose to follow Kingsford Quay."
+      That treatment is in the corpus and is shown to the user. It is not capable
+      of moving the status, because a court lower in the hierarchy cannot overrule
+      one above it. A system that reported "questioned" here would give a
+      confident wrong answer about the state of the law, and would do it in exactly
+      the situation where a partner is checking whether to cite the authority.
+
+      "uncertain" is also accepted, and deliberately. A reader could reasonably say
+      that an authority applied only by a single judge of the Federal Court, with a
+      lower court refusing to follow it, has not been affirmatively established as
+      good law -- and the distinction between "good law" and "no evidence of
+      adverse treatment" is a real one. What is *not* accepted is "questioned" or
+      "overruled": those are the answers that invert the hierarchy.
+
+  - id: authority-approved-by-subordinate-court
+    kind: treatment
+    prompt: Is Bramblewood good law, as at 2025?
+    expected: good_law
+    authority: "FCA:2024:660"
+    claim:
+      key: "FCAFC:2019:77"
+    notes: >
+      Halcyon Ridge, a single judge of the Federal Court, approved Bramblewood at
+      [5]. A subordinate court's approval cannot downgrade an authority, so the
+      hierarchy gate does not apply to it in the negative sense -- and it should
+      not apply at all: this edge is corroborative evidence and suppressing it
+      would hide the fact that the decision is still being applied. The
+      hierarchy gate binds only treatment that moves the law downwards.
+
+  - id: authority-distinguished-below-does-not-confine
+    kind: treatment
+    prompt: Is Bramblewood distinguishable?
+    expected: good_law
+    authority: "FCA:2021:1188"
+    claim:
+      key: "FCAFC:2019:77"
+    notes: >
+      Sandlewood, a single Federal Court judge, distinguished Bramblewood at [3].
+      Again a court below the Full Court, so again the distinction cannot confine
+      the Full Court's decision. The distinction is real and is surfaced to the
+      user as a hierarchy-blocked note -- if the same reasoning were adopted by the
+      Full Court, the authority's status would change, and a system that hid the
+      note would leave the lawyer unable to see the risk forming.
+
+  - id: authority-point-in-time-before-treatment
+    kind: treatment
+    prompt: Was Bramblewood good law as at 1 January 2021?
+    expected: uncertain
+    as_at: "2021-01-01"
+    authority: "FCAFC:2019:77"
+    claim:
+      key: "FCAFC:2019:77"
+    notes: >
+      The point-in-time case, and the one that matters most in a dispute about
+      conduct that occurred years ago. Kingsford Quay followed Bramblewood in
+      November 2022 and Halcyon Ridge approved it in 2024. On 1 January 2021
+      neither had been decided. The correct answer is therefore not "good law" but
+      "we have no treatment on or before this date" -- and a system that computed
+      today's status and reported it as the status then would be anachronistic in
+      the direction that flatters the user's case.
+
+  - id: authority-applied-by-full-court
+    kind: treatment
+    prompt: Is Corvus still good law?
+    expected: good_law
+    authority: "FCAFC:2022:205"
+    claim:
+      key: "FCA:2020:340"
+    notes: >
+      The Full Court applied Corvus at [1] in describing the appeal below. A
+      positive treatment from a court above the target: no hierarchy question
+      arises, and the edge is a direct citation-token binding rather than a
+      name reference.
+
+  - id: authority-advisory-only
+    kind: treatment
+    prompt: Is Yarrow still good law?
+    expected: uncertain
+    authority: "FedCFamC2G:2023:412"
+    claim:
+      key: "HCA:2016:12"
+    notes: >
+      The only treatment Yarrow carries in this corpus is an application by the
+      Federal Circuit Court, recorded below the advisory confidence threshold.
+      It does not move the status and is held for review. This is the case that
+      proves the confidence gate is load-bearing rather than decorative: without
+      it, the highest court in the country would be reported as subject to
+      treatment on the strength of a first-instance name reference.

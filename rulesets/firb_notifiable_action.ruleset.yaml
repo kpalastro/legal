@@ -1,0 +1,262 @@
+# =============================================================================
+# FIRB: is the acquisition a notifiable action?
+# =============================================================================
+#
+# Every node carries `provenance`: a pointer to the statutory provision or the
+# paragraph of an existing judgment that requires it. The engine refuses to load
+# a node without one. That is the mechanism by which this file is a *translation*
+# of legal judgement rather than a paraphrase of it -- you can walk from any
+# factual test back to the words that justify it, and from there to the expert
+# who approved the encoding.
+#
+# Note the structure of `notifiable_action`: the two `exception` children are not
+# conjuncts. They do not need to be true for the action to be notifiable; they
+# are sufficient, alone, to defeat that conclusion. Encoding them as siblings of
+# the elements would encode a different (and wrong) rule -- see
+# docs/04-rule-encoding.md.
+#
+# `status: draft` until an expert signs it with `ratio rules approve`, which
+# stamps a hash of this exact revision. Edit anything below afterwards and the
+# approval stops matching, and the engine will refuse to run it.
+# =============================================================================
+
+id: firb.notifiable_action
+title: Notifiable action — Foreign Acquisitions and Takeovers Act 1975 (Cth)
+question: Is the proposed acquisition a notifiable action?
+domain: firb
+version: 0.3.0
+effective_from: 2016-05-11
+root: notifiable_action
+status: draft
+notes: >
+  Encodes the notifiability question only. It does not encode the national
+  interest assessment, which is a separate question answered by the credence
+  network firb.national_interest_concern. Nothing here delegates to that network:
+  this ruleset contains no delegate_bn node, so the network loads unreferenced and
+  the two are joined by a caller rather than by the encoding (see
+  docs/05-bayesian-layer.md, "The delegate seam").
+
+provision_keys:
+  - "statute:Foreign Acquisitions and Takeovers Act 1975:4"
+  - "statute:Foreign Acquisitions and Takeovers Act 1975:5"
+  - "statute:Foreign Acquisitions and Takeovers Act 1975:6"
+  - "statute:Foreign Acquisitions and Takeovers Act 1975:18"
+
+nodes:
+  - id: notifiable_action
+    kind: all_of
+    label: Notifiable action
+    statement: >
+      The acquisition is a notifiable action under s 18, unless an exception
+      applies.
+    children:
+      - significant_action
+      - acquirer_is_foreign_person
+      - substantial_interest
+      - exemption_certificate_applies
+      - exempt_action_applies
+    provenance:
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:18"
+        note: Notifiable unless exempt, covered by a certificate, or excluded by regulation.
+
+  - id: significant_action
+    kind: leaf
+    label: Significant action
+    statement: The acquisition is a significant action within the meaning of s 6.
+    predicate:
+      field: action.is_significant_action
+      op: eq
+      value: true
+    provenance:
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:6"
+
+  - id: acquirer_is_foreign_person
+    kind: leaf
+    label: Acquirer is a foreign person
+    statement: The acquirer is a foreign person within the meaning of s 4.
+    predicate:
+      field: acquirer.is_foreign_person
+      op: eq
+      value: true
+    provenance:
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:4"
+
+  # ---------------------------------------------------------------------------
+  # Substantial interest.
+  #
+  # This subtree is where the corpus does real work. The Full Court in
+  # Bramblewood held that a minority holding plus a minority board nomination
+  # right is not, without more, a substantial interest, and Kingsford Quay
+  # approved that reasoning. So the minority limb requires BOTH board
+  # representation AND a capacity to determine policy -- not either. A ruleset
+  # written from the statutory text alone would very likely have got this wrong,
+  # which is the case for grounding the rulebook in the judgments rather than in
+  # the provision.
+  # ---------------------------------------------------------------------------
+  - id: substantial_interest
+    kind: any_of
+    label: Substantial interest
+    statement: >
+      The acquirer holds a substantial interest in the target: either the
+      holding meets the base threshold, or the minority control indicia are
+      present.
+    children:
+      - holding_at_or_above_threshold
+      - minority_control_indicia
+      - aggregated_holding_via_association
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2019/77
+        paragraph: 6
+        quote: The appellant holds less than twenty per cent of the issued shares. It therefore does not hold a substantial interest by reason of the quantum of its shareholding alone.
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2022/205
+        paragraph: 3
+        quote: The Full Court in Bramblewood was right to hold that a minority board nomination right does not, without more, convert a minority shareholding into a substantial interest.
+
+  - id: holding_at_or_above_threshold
+    kind: leaf
+    label: Holding at or above the base threshold
+    statement: The acquirer's own holding is at or above 20 per cent.
+    predicate:
+      field: acquirer.holding_percentage
+      op: ge
+      value: 20
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2019/77
+        paragraph: 6
+        note: >
+          The 20 per cent figure is taken from the reasoning in the fixture
+          corpus. It is not a verified reading of the Act and must be checked
+          against the compiled provision before any real use.
+
+  # ---------------------------------------------------------------------------
+  # Aggregation. A holding below the threshold can still be substantial once the
+  # holdings of associates are aggregated, which is what Yarrow is about.
+  # ---------------------------------------------------------------------------
+  - id: aggregated_holding_via_association
+    kind: all_of
+    label: Substantial interest by aggregation
+    statement: >
+      The acquirer is associated with another foreign person and their
+      aggregated holding is at or above 20 per cent.
+    children:
+      - associated_with_another_foreign_person
+      - aggregated_holding_at_or_above_threshold
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/hca/2016/12
+        paragraph: 8
+        quote: It follows that a nominee arrangement, an informal understanding, or a course of dealing from which a shared intention can be inferred may establish an association.
+
+  - id: aggregated_holding_at_or_above_threshold
+    kind: leaf
+    label: Aggregated holding at or above the base threshold
+    statement: The aggregated holding, including holdings of associates, is at or above 20 per cent.
+    predicate:
+      field: acquirer.aggregated_holding_percentage
+      op: ge
+      value: 20
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/hca/2016/12
+        paragraph: 8
+
+  - id: minority_control_indicia
+    kind: all_of
+    label: Minority control indicia
+    statement: >
+      The acquirer both has board nomination rights and a capacity to determine
+      the target's financial and operating policies.
+    children:
+      - board_nomination_rights
+      - capacity_to_determine_policies
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2019/77
+        paragraph: 7
+        quote: The power to nominate one of six directors is a minority power. It does not confer control of the board, and it does not give the appellant a capacity to determine the financial and operating policies of the company. Nothing in the Act equates influence with interest.
+
+  - id: board_nomination_rights
+    kind: leaf
+    label: Board nomination rights
+    statement: The acquirer has a right to nominate a director of the target.
+    predicate:
+      field: acquirer.has_board_nomination_rights
+      op: eq
+      value: true
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2019/77
+        paragraph: 7
+
+  - id: capacity_to_determine_policies
+    kind: leaf
+    label: Capacity to determine policy
+    statement: >
+      The acquirer has a capacity to determine the financial and operating
+      policies of the target.
+    predicate:
+      field: acquirer.can_determine_financial_and_operating_policies
+      op: eq
+      value: true
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/fcafc/2019/77
+        paragraph: 7
+
+  # ---------------------------------------------------------------------------
+  # Association. Yarrow is the apex authority: substance over form, and the
+  # absence of an enforceable arrangement is not fatal.
+  # ---------------------------------------------------------------------------
+  - id: associated_with_another_foreign_person
+    kind: leaf
+    label: Associated with another foreign person
+    statement: >
+      The acquirer is an associate of another foreign person, so that their
+      holdings aggregate.
+    predicate:
+      field: acquirer.is_associate_of_foreign_person
+      op: eq
+      value: true
+    provenance:
+      - kind: judgment_paragraph
+        judgment_id: au/hca/2016/12
+        paragraph: 7
+        quote: Accordingly, the question posed by s 5 is one of substance. The inquiry is whether, as a matter of practical reality, one person's conduct in relation to the relevant holding is to be explained by the wishes of the other. It is not necessary that those wishes be enforceable, or that they be communicated in any particular form.
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:5"
+
+  # ---------------------------------------------------------------------------
+  # Defeaters. Either of these, alone, defeats notifiability however completely
+  # the elements above are made out.
+  # ---------------------------------------------------------------------------
+  - id: exemption_certificate_applies
+    kind: exception
+    exception_of: notifiable_action
+    label: Exemption certificate
+    statement: The action is covered by an exemption certificate in force.
+    predicate:
+      field: action.covered_by_exemption_certificate
+      op: eq
+      value: true
+    provenance:
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:18"
+
+  - id: exempt_action_applies
+    kind: exception
+    exception_of: notifiable_action
+    label: Exempt action
+    statement: The action is an exempt action under the regulations.
+    predicate:
+      field: action.is_exempt_action
+      op: eq
+      value: true
+    provenance:
+      - kind: statute
+        provision_key: "statute:Foreign Acquisitions and Takeovers Act 1975:18"

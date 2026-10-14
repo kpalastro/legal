@@ -1,0 +1,282 @@
+# =============================================================================
+# FIRB: national interest concern (credence network)
+# =============================================================================
+#
+# This is the part of the analysis a rule cannot do. The national interest
+# assessment under the Foreign Acquisitions and Takeovers Act 1975 (Cth) is
+# committed to the Treasurer's satisfaction; it is not a test with elements, and
+# any ruleset that pretends otherwise is encoding a decision that the statute
+# leaves to a person.
+#
+# So the artefact here is a probability, and the engineering problem is not
+# "what does the model say" but "where did every number come from, and what
+# would change the answer". Three commitments follow:
+#
+#   1. Every CPT row has an `elicitations` record naming the expert, the method
+#      and the raw answer. The engine refuses to load the network if the CPT
+#      disagrees with the record. You cannot tune the model away from its
+#      provenance without the loader noticing.
+#   2. The output is a posterior with sensitivities, never a verdict. See
+#      PosteriorReport in model.py -- there is no boolean in it.
+#   3. The factors are described in the language of the statutory test so an
+#      expert can dispute them; the node labels are the questions put to the
+#      expert, not variable names.
+#
+# The distributions below are ILLUSTRATIVE. They are not the product of a real
+# elicitation and must not be used for anything. They are shaped so that the
+# sensitivity analysis has something interesting to say: the acquirer's
+# government status and the target's security character dominate, and ownership
+# opacity matters much less on its own.
+# =============================================================================
+
+id: firb.national_interest_concern
+title: National interest concern arising from a proposed acquisition
+question: >
+  How concerning is this acquisition against the national interest factors,
+  on the material presently available?
+domain: firb
+version: 0.2.0
+target: national_interest_concern
+status: draft
+
+provision_keys:
+  - "statute:Foreign Acquisitions and Takeovers Act 1975 1975:26"
+
+nodes:
+  - id: acquirer_is_foreign_government
+    label: The acquirer is a foreign government or a foreign government investor
+    question: >
+      Is the acquirer a foreign government, or a foreign government investor
+      within the meaning of s 26?
+    role: factor
+    states:
+      - name: "yes"
+        label: "Yes"
+        definition: A foreign government, or an entity in which a foreign government holds a substantial interest.
+      - name: "no"
+        label: "No"
+        definition: A foreign person that is not a foreign government investor.
+    cpt:
+      - [0.35, 0.65]
+
+  - id: target_is_national_security_business
+    label: The target is a national security business or critical infrastructure
+    question: >
+      Does the target business fall within the national security business
+      provisions, or operate critical infrastructure?
+    role: factor
+    states:
+      - name: "yes"
+        label: "Yes"
+        definition: Within the national security business definition, or critical infrastructure.
+      - name: "no"
+        label: "No"
+        definition: An ordinary commercial business.
+    cpt:
+      - [0.25, 0.75]
+
+  - id: acquirer_has_adherence_concerns
+    label: Concerns about the acquirer's adherence to Australian law or standards
+    question: >
+      Is there material bearing on the acquirer's record of adherence to
+      Australian law and regulatory standards, or opacity of its ownership?
+    role: factor
+    states:
+      - name: "yes"
+        label: "Yes"
+        definition: A relevant regulatory history, or ownership that cannot be traced to its ultimate controllers.
+      - name: "no"
+        label: "No"
+        definition: No material concerns identified.
+    cpt:
+      - [0.30, 0.70]
+
+  - id: national_interest_concern
+    label: Level of national interest concern
+    question: >
+      Given the factors above, how concerned should the Treasurer be that the
+      acquisition is contrary to the national interest?
+    role: target
+    parents:
+      - acquirer_is_foreign_government
+      - target_is_national_security_business
+      - acquirer_has_adherence_concerns
+    states:
+      - name: low
+        label: Low
+        definition: >
+          No factor present that would ordinarily attract a national interest
+          condition, and no reason to look further.
+      - name: elevated
+        label: Elevated
+        definition: >
+          Factors present that would ordinarily attract conditions, but not
+          sufficient on their own to support refusal.
+      - name: high
+        label: High
+        definition: >
+          Factors present of a kind that could support refusal, or referral for
+          a national security assessment, absent mitigating conditions.
+
+    # Rows are parent configurations in declared order, first parent varying
+    # slowest:
+    #   [foreign_gov, national_security, adherence_concerns]
+    cpt:
+      - [0.05, 0.30, 0.65]  # yes, yes, yes
+      - [0.15, 0.40, 0.45]  # yes, yes, no
+      - [0.30, 0.45, 0.25]  # yes, no,  yes
+      - [0.55, 0.35, 0.10]  # yes, no,  no
+      - [0.20, 0.45, 0.35]  # no,  yes, yes
+      - [0.45, 0.40, 0.15]  # no,  yes, no
+      - [0.60, 0.30, 0.10]  # no,  no,  yes
+      - [0.85, 0.12, 0.03]  # no,  no,  no
+
+# ---------------------------------------------------------------------------
+# Elicitation records. One per parent configuration. The engine checks that
+# each distribution here equals the corresponding CPT row exactly.
+#
+# The `raw_response` field is what the expert actually said before anyone turned
+# it into numbers. Keeping it matters: when a partner later asks why the model
+# produced an elevated reading, the answer is a sentence a person said in a
+# room, not a float.
+# ---------------------------------------------------------------------------
+elicitations:
+  - node_id: acquirer_is_foreign_government
+    parent_config: []
+    distribution: {"yes": 0.35, "no": 0.65}
+    method: frequency
+    elicited_from: "Historical notification data, FY2019–FY2024 (illustrative)"
+    role: "Special Counsel, Foreign Investment"
+    elicited_at: "2024-11-04T09:30:00"
+    raw_response: >
+      Roughly a third of the notifications we see in a year involve a
+      government-linked acquirer, using the broad reading of investor.
+    rationale: >
+      Prior over the deal flow reaching the assessment stage, not over all
+      foreign investment.
+
+  - node_id: target_is_national_security_business
+    parent_config: []
+    distribution: {"yes": 0.25, "no": 0.75}
+    method: frequency
+    elicited_from: "Historical notification data, FY2019–FY2024 (illustrative)"
+    role: "Special Counsel, Foreign Investment"
+    elicited_at: "2024-11-04T09:30:00"
+    raw_response: >
+      About a quarter of what reaches us touches the national security
+      definitions, and that share is rising.
+
+  - node_id: acquirer_has_adherence_concerns
+    parent_config: []
+    distribution: {"yes": 0.30, "no": 0.70}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A"
+    role: "Partner, Corporate M&A"
+    elicited_at: "2024-11-06T14:00:00"
+    raw_response: >
+      In about one matter in three something comes up — a regulatory history
+      somewhere, or we simply cannot get comfortable about who is ultimately
+      behind the vehicle.
+    rationale: >
+      Judgement-based. The partner flagged this as the least reliable of the
+      three priors.
+
+  - node_id: national_interest_concern
+    parent_config: ["yes", "yes", "yes"]
+    distribution: {low: 0.05, elevated: 0.30, high: 0.65}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      Government-linked buyer, national security target, and a question mark
+      over the acquirer. That is the fact pattern that goes to the Treasurer.
+
+  - node_id: national_interest_concern
+    parent_config: ["yes", "yes", "no"]
+    distribution: {low: 0.15, elevated: 0.40, high: 0.45}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      Still serious, but a clean acquirer makes conditions a plausible outcome
+      rather than refusal.
+
+  - node_id: national_interest_concern
+    parent_config: ["yes", "no", "yes"]
+    distribution: {low: 0.30, elevated: 0.45, high: 0.25}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      Government buyer and a concern about the acquirer, but an ordinary
+      business. Usually conditions.
+
+  - node_id: national_interest_concern
+    parent_config: ["yes", "no", "no"]
+    distribution: {low: 0.55, elevated: 0.35, high: 0.10}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      A government investor in an ordinary business is unremarkable on its own.
+      Conditions only if something else is going on.
+
+  - node_id: national_interest_concern
+    parent_config: ["no", "yes", "yes"]
+    distribution: {low: 0.20, elevated: 0.45, high: 0.35}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      A private acquirer with a national security target but a doubtful record
+      is the case where the security assessment does most of the work.
+
+  - node_id: national_interest_concern
+    parent_config: ["no", "yes", "no"]
+    distribution: {low: 0.45, elevated: 0.40, high: 0.15}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      The ordinary sensitive-sector deal. Conditions are routine; refusal is
+      not.
+
+  - node_id: national_interest_concern
+    parent_config: ["no", "no", "yes"]
+    distribution: {low: 0.60, elevated: 0.30, high: 0.10}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      An ordinary business and an ordinary acquirer, with one loose end. We
+      would usually ask a question and move on.
+
+  - node_id: national_interest_concern
+    parent_config: ["no", "no", "no"]
+    distribution: {low: 0.85, elevated: 0.12, high: 0.03}
+    method: direct_probability
+    elicited_from: "Partner, Corporate M&A; Special Counsel, Foreign Investment"
+    role: "Joint elicitation"
+    elicited_at: "2024-11-13T10:15:00"
+    raw_response: >
+      Nothing here at all. This is the vast majority of notifications.
+
+caveats:
+  interpretation: >
+    This network does not answer whether an acquisition is contrary to the
+    national interest, and it must not be presented as doing so. The statutory
+    question is committed to the Treasurer's satisfaction. What the network
+    does is show how the material facts bear on the assessment, and which of
+    them the assessment is most sensitive to.
+  provenance: >
+    Every distribution is illustrative and was not elicited from a real expert.
+    In a production deployment each record names a partner or specialist, the
+    elicitation method is documented, and the network is re-elicited on a set
+    schedule because the factual priors drift.

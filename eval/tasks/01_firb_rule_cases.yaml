@@ -1,0 +1,355 @@
+# =============================================================================
+# Rule cases: is the acquisition a notifiable action?
+# =============================================================================
+#
+# Every case here has an expected conclusion that comes from the *law* -- the
+# statutory test and the four judgments in the fixture corpus that construe it --
+# not from the system's current behaviour. That distinction is the whole value of
+# an eval set. A case whose expected value was read off the system's output tests
+# only that the system has not changed, and would have passed just as happily
+# against a wrong encoding.
+#
+# Where the corpus supports two readings, both are listed and either is accepted
+# (`also_accept`), because a legal task with one defensible answer is the
+# exception rather than the rule.
+#
+# `authority` names what fixes the ground truth. The harness reports the cases
+# where it is missing, because a case with no authority is a case whose expected
+# answer is somebody's opinion.
+# =============================================================================
+
+id: firb.notifiable_action.cases
+title: FIRB notifiable action -- rule encoding
+domain: firb
+version: "1"
+
+cases:
+  # -- the base case: at or above the threshold ------------------------------
+
+  - id: rule-above-threshold
+    kind: rule
+    prompt: Acquirer holds 25 per cent. No other indicia. Is it a notifiable action?
+    expected: applies
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 25.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:6"
+    notes: >
+      The uncontroversial case, included so that a system that abstains on
+      everything cannot score well.
+
+  # -- the boundary -----------------------------------------------------------
+
+  - id: rule-exactly-at-threshold
+    kind: rule
+    prompt: Acquirer holds exactly 20 per cent.
+    expected: applies
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 20.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:6"
+    notes: >
+      "At or above" includes "at". An off-by-one in the comparison is invisible
+      at 5 per cent and at 40 per cent and decisive here, which is why the
+      generator sweeps the boundary.
+
+  - id: rule-just-below-threshold
+    kind: rule
+    prompt: Acquirer holds 19.9 per cent, with no other indicia.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 19.9
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:6"
+
+  # -- Bramblewood: the minority holding -----------------------------------
+  #
+  # These two cases are the reason the rulebook is grounded in the judgments. A
+  # ruleset written from the statutory text alone would almost certainly encode
+  # "minority holding plus board representation OR policy capacity", because that
+  # is how control-based tests are usually drafted. The Full Court held that it is
+  # "AND": neither indicator alone suffices.
+
+  - id: rule-minority-nomination-right-alone
+    kind: rule
+    prompt: >
+      Acquirer holds 17.3 per cent and has the right to nominate one of six
+      directors. It has no capacity to determine financial and operating policy.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: true
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "FCAFC:2019:77"
+    notes: >
+      Bramblewood at [7]: "The power to nominate one of six directors is a
+      minority power. It does not confer control of the board, and it does not
+      give the appellant a capacity to determine the financial and operating
+      policies of the company. Nothing in the Act equates influence with
+      interest."
+
+  - id: rule-minority-both-indicia
+    kind: rule
+    prompt: >
+      Acquirer holds 17.3 per cent, has a board nomination right, and can
+      determine the financial and operating policies of the target.
+    expected: applies
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: true
+      acquirer.can_determine_financial_and_operating_policies: true
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "FCAFC:2019:77"
+    notes: >
+      The converse of the previous case, and the reason it exists: an encoding
+      that answered "does_not_apply" to everything containing a minority holding
+      would pass the previous case alone.
+
+  - id: rule-capacity-alone-without-board-right
+    kind: rule
+    prompt: >
+      Acquirer holds 17.3 per cent and can determine financial and operating
+      policy, but has no board nomination right.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: true
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "FCAFC:2019:77"
+    notes: >
+      Tests the conjunction from the other side. Both this and the
+      nomination-right-alone case must fail for the "AND" reading to be what is
+      actually encoded.
+
+  # -- Yarrow: aggregation through associates ------------------------------
+
+  - id: rule-aggregation-above-threshold
+    kind: rule
+    prompt: >
+      Acquirer holds 17.3 per cent and is an associate of another foreign person
+      holding a further 8 per cent.
+    expected: applies
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.aggregated_holding_percentage: 25.3
+      acquirer.is_associate_of_foreign_person: true
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "HCA:2016:12"
+    notes: >
+      Yarrow at [7]: the association question "is one of substance ... It is not
+      necessary that those wishes be enforceable". Note that the nominee
+      arrangement in Yarrow needed no enforceable agreement, which is why the
+      association limb here is a bare fact rather than a documented arrangement.
+
+  - id: rule-association-without-aggregation
+    kind: rule
+    prompt: >
+      Acquirer is an associate of another foreign person, but the aggregated
+      holding is 19 per cent.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.aggregated_holding_percentage: 19.0
+      acquirer.is_associate_of_foreign_person: true
+      acquirer.has_board_nomination_rights: true
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "HCA:2016:12"
+    notes: >
+      Association is a necessary condition of the aggregation limb, not a
+      sufficient one. A rule that treated association alone as enough would pass
+      the previous case and fail this one.
+
+  # -- the defeaters --------------------------------------------------------
+  #
+  # These are the cases the coverage report flagged as unexercised while the
+  # generator was sweeping only leaf nodes. Both exceptions are structurally
+  # different from the elements -- they are not conjuncts -- and a case set that
+  # does not exercise them cannot tell the two encodings apart.
+
+  - id: rule-exemption-certificate-defeats
+    kind: rule
+    prompt: >
+      Acquirer holds 30 per cent, but the action is covered by an exemption
+      certificate in force.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 30.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: true
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+
+  - id: rule-exempt-action-defeats
+    kind: rule
+    prompt: >
+      Acquirer holds 30 per cent, but the action is an exempt action under the
+      regulations.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 30.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: true
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+
+  - id: rule-defeater-is-not-a-conjunct
+    kind: rule
+    prompt: >
+      Acquirer holds 30 per cent and is not covered by any exemption; the
+      exception fields are both false.
+    expected: applies
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 30.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+    notes: >
+      Included deliberately. If the two exceptions had been encoded as ordinary
+      conjuncts -- the most common way computational-law projects get
+      defeasibility wrong -- this case would still pass, because both are false.
+      It is the previous two that separate the encodings.
+
+  # -- elements that are absent ---------------------------------------------
+
+  - id: rule-not-a-significant-action
+    kind: rule
+    prompt: Acquirer holds 30 per cent but the acquisition is not a significant action.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: false
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 30.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:6"
+
+  - id: rule-acquirer-not-a-foreign-person
+    kind: rule
+    prompt: Acquirer holds 30 per cent but is not a foreign person.
+    expected: does_not_apply
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: false
+      acquirer.holding_percentage: 30.0
+      acquirer.aggregated_holding_percentage: 0.0
+      acquirer.is_associate_of_foreign_person: false
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:4"
+
+  # -- the abstention cases -------------------------------------------------
+  #
+  # The expected value is the abstention sentinel, not a conclusion. A system
+  # that answers "does_not_apply" here because it read the missing substantial
+  # interest limbs as false would be producing a confident wrong answer on the
+  # facts it was not given, and that is the failure this pair exists to catch.
+
+  - id: rule-missing-holding-and-indicia
+    kind: rule
+    prompt: >
+      We know the acquisition is significant and the acquirer is a foreign
+      person. We have not yet established the holding or any of the control
+      indicia.
+    expected: "__abstain__"
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:6"
+    notes: >
+      The engine's own conclusion is "undetermined" -- it distinguishes "the
+      element is false" from "we do not know whether the element is true". The
+      rule system abstains on top of that, which is the correct behaviour to
+      score here.
+
+  - id: rule-missing-only-the-aggregation
+    kind: rule
+    prompt: >
+      Holding is 17.3 per cent, the acquirer has no board nomination right and no
+      policy capacity. Whether it is an associate of another foreign person is
+      unresolved.
+    expected: "__abstain__"
+    facts:
+      action.is_significant_action: true
+      acquirer.is_foreign_person: true
+      acquirer.holding_percentage: 17.3
+      acquirer.has_board_nomination_rights: false
+      acquirer.can_determine_financial_and_operating_policies: false
+      action.covered_by_exemption_certificate: false
+      action.is_exempt_action: false
+    authority: "HCA:2016:12"
+    notes: >
+      The hardest abstention case, and the one a system is most likely to get
+      wrong. Every limb resolved so far points to "does_not_apply", and the
+      unresolved limb -- association -- could reverse it. Answering here is
+      answering on incomplete facts; the correct behaviour is to say so.

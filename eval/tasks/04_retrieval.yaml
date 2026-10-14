@@ -1,0 +1,159 @@
+# =============================================================================
+# Retrieval cases: did we find the paragraph that governs?
+# =============================================================================
+#
+# Retrieval is scored on the judgment the top-ranked paragraph belongs to, which
+# is a deliberately coarse measure -- a system can find the right case at the
+# wrong paragraph and score as correct here. It is coarse because the finer
+# measure is already covered elsewhere: paragraph-level correctness is what the
+# grounding suite tests, and citation-graph correctness is what the treatment
+# suite tests. What this suite adds is the question the other two cannot ask:
+# when the corpus does not contain the answer, does the system say so?
+#
+# That last family of cases is the important one. A retriever that always returns
+# its best hit is confabulation with a search index in front of it, and the scores
+# it returns look identical whether the corpus contains the answer or not.
+#
+# -----------------------------------------------------------------------------
+# LIMITATIONS. Read before quoting any number from this suite.
+#
+# 1. Six cases, four of them positive. This is a smoke test of the refusal
+#    behaviour, not a measurement of retrieval quality. The margin between the
+#    lowest-scoring positive case and the highest-scoring refusal case is what
+#    matters, and it must be recomputed every time a case is added -- the
+#    abstention threshold in RetrievalSystem is set from it and nothing here
+#    re-derives it.
+#
+# 2. Only one of the four positive cases is hard (retrieve-distinguishing-
+#    authority, which shares most of its vocabulary with the case it
+#    distinguishes). The others are cleared by term overlap alone, so a system
+#    scoring 4/4 here may still be doing nothing more than keyword matching.
+#
+# 3. The suite cannot detect the pathology it is closest to: preferring a lower
+#    court's summary of an authority over the authority itself. See the note on
+#    retrieve-association-substance. Nothing in the system currently implements
+#    authority-aware ranking, and no case here would fail if it did.
+#
+# 4. Retrieval does not index statutory provisions at all -- the index is built
+#    from judgments only. A correct answer that lives in a provision is not
+#    retrievable, and the two refusal cases below are refusal cases partly for
+#    that reason: the exemption certificate appears in the statute but no court
+#    in the corpus has construed it, so as the index stands there is nothing to
+#    find. That is the right answer here and the wrong architecture generally.
+# =============================================================================
+
+id: ratio.retrieval.cases
+title: Retrieval -- finding the governing authority, and refusing when there is none
+domain: retrieval
+version: "1"
+
+cases:
+  - id: retrieve-minority-nomination-right
+    kind: retrieval
+    prompt: Does a minority board nomination right create a substantial interest?
+    expected: au/fcafc/2019/77
+    also_accept: [au/fcafc/2022/205]
+    query: minority board nomination right substantial interest minority shareholding
+    authority: "FCAFC:2019:77"
+    notes: >
+      Bramblewood is where the point is decided, at [7]: "The power to nominate
+      one of six directors is a minority power." It is the authority the
+      ruleset's minority-control limb is grounded in, so a failure to find it is
+      a failure to find the case an encoded rule depends on.
+
+      Kingsford Quay is accepted as well, and the reason is not that the two are
+      interchangeable. At [3] the Full Court says in terms that "a minority board
+      nomination right does not, without more, convert a minority shareholding
+      into a substantial interest", having had full argument on Bramblewood's
+      correctness which the parties in Bramblewood did not. On *this* question it
+      is the more direct statement of the holding, and it follows Bramblewood, so
+      Bramblewood remains the authority without being the only correct answer.
+      The case therefore tests whether the retriever surfaces a Full Court
+      statement of the minority-right point at all -- not whether it prefers one
+      particular judgment over another. Two cases cannot test the finer question
+      and this suite does not claim to; see the limitations note at the head of
+      this file.
+
+  - id: retrieve-association-substance
+    kind: retrieval
+    prompt: Is an enforceable arrangement necessary to establish an association?
+    expected: au/hca/2016/12
+    also_accept: [au/fcafc/2019/77]
+    query: association substance form enforceable arrangement wishes of another
+    authority: "HCA:2016:12"
+    notes: >
+      Yarrow at [7] is the answer: the question posed by s 5 "is one of
+      substance ... It is not necessary that those wishes be enforceable."
+      Apex authority on the association limb, and the paragraph the ruleset's
+      association rule cites.
+
+      Bramblewood [3] is accepted, and "accepted" here is a judgement about
+      relevance, not a claim of equivalence. It states Yarrow's holding at
+      second hand -- "the absence of an enforceable arrangement is not fatal to
+      a finding of association" -- and it is a judgment that genuinely addresses
+      the question, so scoring it as a false answer would overstate what went
+      wrong. What went wrong is milder and worth naming: it outranks Yarrow [7]
+      on lexical grounds because a summary of a decision uses the vocabulary of
+      the question more densely than the decision itself does, and the system
+      has no authority-preference rule to correct that. Returning Bramblewood
+      gives a lawyer a citation worth checking rather than the citation that
+      resolves the point. See the limitations note at the head of this file.
+
+  - id: retrieve-aggregated-holdings
+    kind: retrieval
+    prompt: When are the holdings of two foreign persons aggregated?
+    expected: au/hca/2016/12
+    query: aggregation holdings associates nominee arrangement shared intention
+    authority: "HCA:2016:12"
+    notes: >
+      Yarrow at [8]: "a nominee arrangement, an informal understanding, or a
+      course of dealing from which a shared intention can be inferred may
+      establish an association." Second query against the same authority, on the
+      limb that the ruleset's aggregation rule cites.
+
+  - id: retrieve-distinguishing-authority
+    kind: retrieval
+    prompt: >-
+      Can an interest held through a structured arrangement be distinguished from
+      a genuine minority holding?
+    expected: au/fca/2021/1188
+    query: distinguishable structured interest recorded in another name nominee
+    authority: "FCA:2021:1188"
+    notes: >
+      Sandlewood at [3]. This is the case a lawyer needs when the other side's
+      facts differ from the leading authority, and it is the hardest of the four
+      positive cases to retrieve: it shares most of its vocabulary with
+      Bramblewood, which it is distinguishing.
+
+  # -- the refusal cases ----------------------------------------------------
+  #
+  # Neither of these topics is addressed by any judgment in the corpus. The
+  # statutory provision mentions the exemption certificate, but no court in the
+  # corpus has construed it, so there is no *authority* to retrieve. The correct
+  # answer is that we have nothing, and the failure this pair is designed to
+  # detect is a system that returns its best-scoring paragraph anyway.
+
+  - id: retrieve-exemption-certificate-not-covered
+    kind: retrieval
+    prompt: What is the effect of an exemption certificate on notifiability?
+    expected: "__abstain__"
+    query: exemption certificate notifiable action effect in force
+    authority: "statute:Foreign Acquisitions and Takeovers Act 1975 1975:18"
+    notes: >
+      No judgment in the corpus construes the exemption certificate. A system
+      that answers by returning whichever judgment happens to share the words
+      "certificate" or "notifiable" is answering about the wrong thing in the
+      register of a citation.
+
+  - id: retrieve-continuous-disclosure-not-covered
+    kind: retrieval
+    prompt: What are the elements of continuous disclosure liability?
+    expected: "__abstain__"
+    query: continuous disclosure listed entity price sensitive information
+    authority: "statute:Corporations Act 2001 2001:674"
+    notes: >
+      A question from an adjacent practice area, with adjacent vocabulary: the
+      corpus is full of acquisitions, notifications and holdings, and a lexical
+      retriever will find "significant"-flavoured paragraphs for almost any
+      corporate-law query. This case asks whether the system knows what it does
+      not hold.
