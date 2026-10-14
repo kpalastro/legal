@@ -91,6 +91,24 @@ def _ruleset(bundle: CorpusBundle, wanted: str | None) -> RuleSet | None:
 
 
 def cmd_ingest(args: argparse.Namespace) -> int:
+    # An optional positional path, accepted because it is what people type.
+    # Corpus loading is the one command whose subject is the filesystem, so
+    # `ratio ingest data/fixtures` reads as the obvious thing to write even
+    # though the path is otherwise a global flag. Rejecting it teaches the flag;
+    # accepting it does not cost anything, because the two forms cannot disagree
+    # — if both are given, that is a contradiction worth reporting rather than
+    # silently resolving in favour of one.
+    path = getattr(args, "path", None)
+    if path:
+        if args.fixtures != str(DEFAULT_FIXTURES):
+            print(
+                f"both a path argument ({path!r}) and --fixtures "
+                f"({args.fixtures!r}) were given; use one or the other",
+                file=sys.stderr,
+            )
+            return EXIT_UNUSABLE
+        args.fixtures = path
+
     bundle, kb = _load(args)
     print(bundle.summary())
     print()
@@ -640,6 +658,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("ingest", help="load the corpus and report what it contains")
+    p.add_argument(
+        "path",
+        nargs="?",
+        help="corpus directory (default: --fixtures, i.e. data/fixtures). "
+        "Accepted positionally because that is what people type.",
+    )
     p.add_argument("--aliases", action="store_true", help="show the case-name table")
     p.set_defaults(func=cmd_ingest)
 
@@ -727,8 +751,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    # A corpus that will not load is an ordinary thing to get wrong -- the
+    # commonest cause is running from a directory other than the project root, so
+    # `data/fixtures` resolves somewhere that has no judgments.yaml in it. The
+    # message already says which path it looked in; a traceback on top of that
+    # buries the one useful sentence under twenty lines of stack.
+    from ratio.ingest.fixtures import CorpusError
+
     try:
         return int(args.func(args))
+    except CorpusError as exc:
+        return _fail(f"{exc}\n  (paths are relative to the current directory: "
+                     f"{Path.cwd()})")
     except FileNotFoundError as exc:
         return _fail(str(exc))
     except BrokenPipeError:  # piping into head(1)
