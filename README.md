@@ -171,8 +171,8 @@ src/ratio/
 docs/                the design, argument by argument
 rulesets/            encoded legal tests, with provenance
 data/fixtures/       synthetic judgments (clearly labelled — see below)
-data/golden/         evaluation golden sets
 eval/                harness, metrics, statistics
+eval/tasks/          the task suites `ratio eval` scores against
 ui/                  React + TypeScript expert authoring surface
 infra/               AWS deployment skeleton
 ```

@@ -373,3 +373,47 @@ def test_a_term_the_corpus_never_contains_drives_coverage_down(
     # roughly a half, however well the other half matches.
     matched = {"action": 1.0}
     assert system.coverage("action nonexistenttermzzz", matched) < 0.5
+
+
+# -- locating the suites -------------------------------------------------------
+
+
+def test_the_tasks_target_may_be_a_directory_or_a_single_suite(
+    retrieval_suite: TaskSuite,
+) -> None:
+    """Running one suite is the common case while that suite is being written.
+
+    If `--tasks` only took a directory, editing a suite would mean copying it into
+    a directory of its own to run it -- which is the kind of friction that ends
+    with the suite not being run.
+    """
+    from ratio.eval.harness import load_suites
+
+    from_directory = load_suites(TASKS)
+    assert len(from_directory) > 1
+
+    single = load_suites(TASKS / "04_retrieval.yaml")
+    assert len(single) == 1
+    assert single[0].id == retrieval_suite.id
+
+
+def test_a_tasks_target_that_is_not_a_suite_says_so(tmp_path: Path) -> None:
+    """A wrong path must not read as "nothing to score, all good".
+
+    The distinction the whole harness rests on -- abstaining is not passing --
+    applies to the harness's own inputs too.
+    """
+    from ratio.eval.harness import load_suites
+
+    with pytest.raises(FileNotFoundError, match="no task suite"):
+        load_suites(tmp_path / "nope")
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(FileNotFoundError, match="no \\*.yaml"):
+        load_suites(empty)
+
+    not_a_suite = tmp_path / "notes.md"
+    not_a_suite.write_text("this is not a task suite\n")
+    with pytest.raises(FileNotFoundError, match="not a \\*.yaml task suite"):
+        load_suites(not_a_suite)

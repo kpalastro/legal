@@ -350,15 +350,29 @@ def compare(
     )
 
 
-def load_suites(directory: Path) -> list[TaskSuite]:
-    if not directory.exists():
+def load_suites(target: Path) -> list[TaskSuite]:
+    """Load every suite at ``target``, which may be a directory or one file.
+
+    Accepting a file as well as a directory is not politeness. Running a single
+    suite is the common case while a suite is being written, and the alternative
+    -- copy the file into a directory of its own -- is the kind of friction that
+    ends with people not running the suite they are editing.
+    """
+    if not target.exists():
         raise FileNotFoundError(
-            f"no task directory at {directory}. The evaluation suite is data, "
-            "not code; point --tasks at a directory containing *.yaml suites."
+            f"no task suite at {target}. The evaluation suite is data, not code; "
+            "point --tasks at a directory of *.yaml suites, or at one suite file."
         )
-    suites = TaskSuite.load_dir(directory)
+    if target.is_file():
+        if target.suffix not in {".yaml", ".yml"}:
+            raise FileNotFoundError(
+                f"{target} is not a *.yaml task suite. --tasks takes a suite file "
+                "or a directory of them."
+            )
+        return [TaskSuite.load(target)]
+    suites = TaskSuite.load_dir(target)
     if not suites:
-        raise FileNotFoundError(f"{directory} contains no *.yaml task suites")
+        raise FileNotFoundError(f"{target} contains no *.yaml task suites")
     return suites
 
 
