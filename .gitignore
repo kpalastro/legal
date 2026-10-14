@@ -23,9 +23,16 @@ __pycache__/
 *.tfstate.*
 .terraform/
 
-# Node (the authoring surface, when it exists)
+# Node (the authoring surface)
 node_modules/
 ui/dist/
+
+# The authoring workspace. `ratio serve` copies the rulebook here before editing
+# it, so this is a scratch copy of a governed artefact -- never the artefact, and
+# never committed. Its `edits.jsonl` journal is the same: it is a local precursor
+# to the audit ledger in docs/09, not the ledger.
+.ratio-workspace/
+edits.jsonl
 
 # OS noise
 .DS_Store

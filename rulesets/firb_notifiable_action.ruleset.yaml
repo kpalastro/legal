@@ -115,7 +115,14 @@ nodes:
       - kind: judgment_paragraph
         judgment_id: au/fcafc/2022/205
         paragraph: 3
-        quote: The Full Court in Bramblewood was right to hold that a minority board nomination right does not, without more, convert a minority shareholding into a substantial interest.
+        # Quoted to the comma, not to a full stop. The source sentence continues
+        # ("...substantial interest, and it was right to decline to extend
+        # Yarrow beyond its subject matter"); ending the quotation at a full stop
+        # the judgment does not have changes the grammar of the sentence it cites
+        # and hides that the court went on to say something further. This is the
+        # defect `ratio.rules.engine.anchor_problems` now reports -- see
+        # docs/04-rule-encoding.md.
+        quote: The Full Court in Bramblewood was right to hold that a minority board nomination right does not, without more, convert a minority shareholding into a substantial interest
 
   - id: holding_at_or_above_threshold
     kind: leaf

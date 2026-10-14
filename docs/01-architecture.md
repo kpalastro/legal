@@ -102,6 +102,13 @@ depend on several others at once.
 allowed to. It is an adapter; the behaviour it exposes lives in the service
 layer and is tested there.
 
+**`authoring/` — the second boundary, and the same shape.** A store, a service,
+and two transports (HTTP, and the CLI's `ratio serve`). It defines its own
+`Refused` rather than importing the MCP layer's `Refusal`: the two transports
+share a *contract* — a refusal is data, returned with its reason and the nearest
+thing the system does hold — and not an import. A surface that cannot render a
+refusal is a surface that turns a governance control into an error dialog.
+
 **`agents/`, `obs/` — empty or near-empty.** Designed in `docs/07` and `docs/09`,
 not built.
 
@@ -114,7 +121,7 @@ not built.
 llm  → httpx          the agent layer's only egress
 mcp  → mcp            the MCP SDK; the service layer runs without it
 otel → opentelemetry-*  tracing; the ledger does not need it
-api  → fastapi, uvicorn  an HTTP front door, not built
+api  → fastapi, uvicorn  the authoring surface's HTTP front door
 dev  → pytest, pytest-asyncio
 ```
 
@@ -189,11 +196,16 @@ March" is a guess.
 
 ## What is not built
 
-`agents/`, `obs/`, `ui/` and `infra/` are empty directories. The MCP service
+`agents/`, `obs/` and `infra/` are empty directories. The MCP service
 layer is built and tested; the agent roles that would call it are specified in
-`docs/07-agent-orchestration-mcp.md`. The ruleset ships `status: draft` — there
-is a real approval mechanism and nothing has been through it yet, which every
-output reports.
+`docs/07-agent-orchestration-mcp.md`. The authoring surface in `ui/` is built and
+served by `ratio serve`, and it sits on the authoring service in
+`src/ratio/authoring/`; `docs/06-expert-authoring-surface.md` describes it and
+names what it still cannot do — chiefly that the citation queue can be read and
+not worked, that the service has no identity layer, and that the lawyer-facing
+job (a) has no surface at all. The ruleset ships `status: draft` — there is a
+real approval mechanism and nothing has been through it yet, which every output
+reports.
 
 ## Repository map
 
@@ -206,6 +218,7 @@ src/ratio/
   retrieve/          BM25, dense interface, hybrid fusion, query understanding
   verify/            grounding and citation verification
   rules/             defeasible engine and ruleset loading
+  authoring/         store, service and HTTP adapter behind the expert surface
   bn/                credence networks, exact inference, sensitivity
   agents/            orchestration and roles            [empty]
   mcp_server/        Model Context Protocol tools and resources
@@ -214,6 +227,6 @@ docs/                the design, argument by argument
 rulesets/            encoded legal tests, with provenance
 data/fixtures/       synthetic judgments, clearly labelled
 eval/                harness, metrics, statistics, task suites
-ui/                  React + TypeScript authoring surface [empty]
+ui/                  React + TypeScript expert authoring surface, served by `ratio serve`
 infra/               AWS deployment skeleton               [empty]
 ```

@@ -518,3 +518,86 @@ def provenance_problems(
                 f"ruleset declares provision {key!r}, which is not in the corpus"
             )
     return problems
+
+
+def anchor_problems(
+    ruleset: RuleSet,
+    *,
+    judgments: Mapping[str, Any],
+) -> list[str]:
+    """Provenance whose anchor does not hold.
+
+    :func:`provenance_problems` asks whether a citation names a document the
+    corpus holds. This asks the next question, which is the one that decides
+    whether the citation is evidence: *is the node anchored to the words it
+    claims?*
+
+    Three ways it is not, and all three were live in this repository at once.
+
+    A node may cite a paragraph the judgment does not contain. ``paragraph: 999``
+    of a judgment that ends at [20] resolves to a document and to nothing inside
+    it, so the key check passes and the pointer is dead.
+
+    A node may cite a bare ``[42]`` in a judgment whose reasons are numbered
+    separately by each judge. ``[42]`` then names as many paragraphs as there
+    are authors, and ``AuthorityRef`` has no field in which to say whose.
+    Resolving it arbitrarily is how a system ends up quoting a dissent as the
+    majority, so it is reported as unresolvable rather than guessed at.
+
+    And a node may quote words the paragraph does not contain. This is the
+    narrow one and the dangerous one: it is invisible to every structural check,
+    it survives a skim, and it is *nearly* right -- the shipped ruleset quoted a
+    sentence of the Full Court with the source's comma replaced by a full stop,
+    which reads as a complete sentence and is not one. A quotation that is not
+    verbatim is not a quotation; it is a paraphrase wearing a citation, which is
+    the failure this project exists to make impossible.
+
+    Matching is the verifier's comparison (typographic folding, whitespace
+    collapsing -- :func:`ratio.verify.grounding.normalise_quote`), not a fuzzy
+    one. A paraphrase is not a near miss. It is a different thing.
+    """
+    # Imported here rather than at module scope so that the rule engine stays
+    # importable without the verification package.
+    from ratio.verify.grounding import normalise_quote
+
+    problems: list[str] = []
+    for node in ruleset.nodes:
+        for ref in node.provenance:
+            if ref.kind != "judgment_paragraph":
+                continue
+            judgment = judgments.get(ref.judgment_id) if ref.judgment_id else None
+            if judgment is None:
+                continue  # provenance_problems reports this; do not double-report
+            if ref.paragraph is None:
+                continue
+            ambiguous = judgment.ambiguous_anchor(ref.paragraph)
+            if ambiguous:
+                problems.append(
+                    f"node {node.id!r} cites paragraph [{ref.paragraph}] of "
+                    f"{ref.judgment_id!r}, whose reasons are numbered separately by "
+                    f"{len(ambiguous)} judges ({', '.join(str(a) for a in ambiguous)}); "
+                    "the anchor names more than one paragraph and cannot be resolved"
+                )
+                continue
+            paragraph = judgment.paragraph(ref.paragraph)
+            if paragraph is None:
+                problems.append(
+                    f"node {node.id!r} cites paragraph [{ref.paragraph}] of "
+                    f"{ref.judgment_id!r}, which that judgment does not contain"
+                )
+                continue
+            if not ref.quote:
+                continue
+            if normalise_quote(ref.quote) not in normalise_quote(paragraph.text):
+                problems.append(
+                    f"node {node.id!r} quotes words that are not in paragraph "
+                    f"[{ref.paragraph}] of {ref.judgment_id!r}: "
+                    f"{_abbreviate(ref.quote)!r} does not appear in the judgment's "
+                    "text for that paragraph"
+                )
+    return problems
+
+
+def _abbreviate(text: str, limit: int = 72) -> str:
+    flat = " ".join(text.split())
+    return flat if len(flat) <= limit else flat[: limit - 1] + "…"

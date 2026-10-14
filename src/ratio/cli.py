@@ -461,12 +461,24 @@ def cmd_rules(args: argparse.Namespace) -> int:
         return EXIT_OK
 
     if action == "validate":
-        from ratio.rules.engine import provenance_problems, validate_ruleset
+        from ratio.rules.engine import (
+            anchor_problems,
+            provenance_problems,
+            validate_ruleset,
+        )
 
         # Resolve provenance against the corpus as well as checking structure.
         # "Has provenance" and "has provenance that names something" are
         # different claims, and the first revision of the shipped ruleset passed
         # the first while failing the second on every single statutory node.
+        #
+        # And the third claim, which is the one that took longest to notice:
+        # "names something" and "names something that says this" are different
+        # too. A citation can resolve to a real paragraph and quote words that
+        # are not in it, and that passes every check above. `anchor_problems`
+        # asks the third question, and the shipped ruleset failed it -- a
+        # sentence of the Full Court quoted with the source's comma replaced by
+        # a full stop, which reads as a complete sentence and is not one.
         judgment_ids = set(kb.judgments)
         provision_keys = set(kb.provisions)
 
@@ -478,6 +490,7 @@ def cmd_rules(args: argparse.Namespace) -> int:
                 judgment_ids=judgment_ids,
                 provision_keys=provision_keys,
             )
+            issues += anchor_problems(ruleset, judgments=kb.judgments)
             if issues:
                 problems += len(issues)
                 print(f"{ruleset.id}: {len(issues)} issue(s)")
@@ -494,23 +507,21 @@ def cmd_rules(args: argparse.Namespace) -> int:
 
 
 def _approve(args: argparse.Namespace, bundle: CorpusBundle) -> int:
-    from ratio.model import Approval
-
     ruleset = _ruleset(bundle, args.ruleset)
     if ruleset is None:
         return _fail(f"no ruleset matching {args.ruleset!r}")
     if not args.by or not args.role:
         return _fail("approval requires --by (name) and --role (capacity)")
 
-    payload = ruleset.canonical_payload()
-    digest = Approval.hash_of(payload)
+    digest = ruleset.approval_digest
     print(f"ruleset:  {ruleset.id} v{ruleset.version}")
     print(f"digest:   {digest}")
     print()
-    print("This digest covers the ruleset exactly as it stands. Edit any node,")
-    print("predicate value, provenance pointer or version afterwards and the digest")
-    print("stops matching, at which point the engine will refuse to run it as")
-    print("approved. Paste this block into the ruleset's `approvals` list:")
+    print("This digest covers the ruleset as it will stand once approved -- that is,")
+    print("with `status: approved`. Edit any node, predicate value, provenance pointer,")
+    print("version or status afterwards and the digest stops matching, at which point")
+    print("the engine will refuse to run it as approved. Paste this block into the")
+    print("ruleset's `approvals` list:")
     print()
     print("  approvals:")
     print(f"    - approver: {args.by!r}")
@@ -624,6 +635,56 @@ def _rank(court: str) -> int:
         return Court(court).rank
     except ValueError:
         return -1
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Run the authoring surface.
+
+    The FastAPI and uvicorn imports live behind the ``api`` extra, and the import
+    error is the ordinary one: a person who runs a command and sees
+    ``ModuleNotFoundError: No module named 'fastapi'`` learns nothing about what
+    to do next.
+    """
+    try:
+        from ratio.authoring.api import build_app
+        from ratio.authoring.service import AuthoringService
+    except ImportError as exc:  # pragma: no cover - requires the api extra
+        print(
+            "the authoring surface needs the api extra:\n"
+            "  pip install 'ratio[api]'\n"
+            f"(import failed: {exc})",
+            file=sys.stderr,
+        )
+        return EXIT_UNUSABLE
+
+    service = AuthoringService.build(
+        args.fixtures,
+        rulesets=args.rulesets,
+        workspace=args.workspace,
+        in_place=args.in_place,
+    )
+    described = service.store.describe()
+    print(f"rulesets:    {described['directory']}")
+    if described["origin"]:
+        print(f"copied from: {described['origin']}  (edits do not touch it)")
+    print(f"journal:     {described['journal']}")
+    print(f"serving on   http://{args.host}:{args.port}")
+    print()
+    print("The shipped rulebook is a draft. Nothing here is legal advice.")
+
+    ui_dist = ROOT / "ui" / "dist"
+    app = build_app(service, ui_dist=ui_dist if ui_dist.is_dir() else None)
+    if not ui_dist.is_dir():
+        print()
+        print(f"no built UI at {ui_dist}; serving the API only.")
+        print("build it with:  cd ui && npm install && npm run build")
+    try:
+        import uvicorn
+    except ImportError as exc:  # pragma: no cover - requires the api extra
+        print(f"uvicorn is not installed: {exc}", file=sys.stderr)
+        return EXIT_UNUSABLE
+    uvicorn.run(app, host=args.host, port=args.port)
+    return EXIT_OK
 
 
 # --------------------------------------------------------------------------
@@ -744,6 +805,27 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("stats", help="one-screen health of the knowledge base")
     p.set_defaults(func=cmd_stats)
+
+    p = sub.add_parser(
+        "serve",
+        help="run the expert authoring surface over the rulebook",
+        description=(
+            "Serve the authoring surface. Edits land in a workspace copy unless "
+            "--in-place is given, so pointing this at rulesets/ does not put the "
+            "shipped rulebook behind a browser."
+        ),
+    )
+    p.add_argument("--fixtures", type=Path, default=Path("data/fixtures"))
+    p.add_argument("--rulesets", type=Path, default=Path("rulesets"))
+    p.add_argument("--workspace", type=Path, default=None)
+    p.add_argument(
+        "--in-place",
+        action="store_true",
+        help="edit the ruleset directory itself, not a workspace copy",
+    )
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_serve)
 
     return parser
 

@@ -725,6 +725,32 @@ class RuleSet(BaseModel):
         return None
 
     @property
+    def approval_digest(self) -> str:
+        """The hash an approval of this revision has to carry.
+
+        *Not* the hash of the revision as it stands. ``canonical_payload``
+        covers ``status``, and signing off is precisely the act of changing
+        ``status`` from ``draft`` to ``approved`` -- so a digest taken before
+        that change can never match the revision afterwards. An approval stamped
+        with one makes :attr:`is_approved` false, and makes
+        :func:`ratio.rules.engine.validate_ruleset` report the ruleset as edited
+        since sign-off, which in turn makes :class:`~ratio.rules.engine.RuleEngine`
+        refuse to load it.
+
+        That was the shipped behaviour: ``ratio rules approve`` printed a digest
+        taken over the revision as it stood and then instructed the reader to set
+        ``status: approved``, and doing exactly that produced a rulebook that
+        could not be evaluated at all. The failure is invisible until someone
+        actually approves something, and nothing had.
+
+        An expert can only be shown the digest their signature will be checked
+        against, so it has to be computed over the payload this revision will
+        have once it is approved.
+        """
+        approved = self.model_copy(update={"status": "approved"})
+        return Approval.hash_of(approved.canonical_payload())
+
+    @property
     def is_approved(self) -> bool:
         return self.status == "approved" and self.current_approval is not None
 

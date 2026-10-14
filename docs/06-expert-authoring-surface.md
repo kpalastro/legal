@@ -287,30 +287,97 @@ Three consequences the interface has to respect:
   the ordinary use case, which is the failure the CLI was written to avoid.
 * An unapproved artefact says so on every screen that shows its output.
 
+## What was built
+
+`ui/` is a Vite + React 18 + TypeScript project, and `ratio serve` builds it,
+serves it, and mounts the authoring API under `/api`. It was built to the design
+above rather than the design being retrofitted to it, so the places where the
+implementation and the prose below disagree are worth reading as the interesting
+part. The API seam is `src/ratio/authoring/` — a service, a store that copies the
+rulebook into `.ratio-workspace/` before touching it, and a thin HTTP adapter
+that requires the `api` extra. Nothing in the surface computes a legal fact; it
+renders what the service returns, and the service's refusals are data (HTTP 200
+with `{"refused": true, ...}`), not errors, so the surface never retries one.
+
+The authoring tabs implement job (b):
+
+* **Inspect & edit** is the three columns the requirement asks for — the tree in
+  **declaration order** (not alphabetised: a ruleset's order is content),
+  the editor, and the provenance rail, all visible at once. Exceptions render in
+  their own block under the conjuncts, saying "None of these needs to be true…
+  any one of them, if it fires, defeats the conclusion", because a tree that
+  draws EXCEPTION as a sibling AND-branch has drawn a different rule. The rail
+  beside the editor shows, for the selected node: each `AuthorityRef` with its
+  status, the anchor scoped by judge, the node's own quotation, the paragraph
+  text it claims to come from, and the authority status with its caveat — never in
+  a tooltip, and there is deliberately no tooltip styling in `styles.css` to put
+  one in.
+* **The save bar** carries three badges which are the three questions in order:
+  *structurally valid* (blocks a save), *every pointer resolves* (warns; a key
+  that almost matches is still a key nobody checked), and *every quotation
+  verified*. The third is `anchor_problems`, the check described in
+  `docs/04-rule-encoding.md`; it is the one that catches a node whose provenance
+  names a real judgment and a real paragraph and then quotes words the paragraph
+  does not contain.
+* **Preview** runs the candidate ruleset over entered facts against the *unsaved*
+  candidate, and renders `undetermined` as an abstention with the field a user
+  could establish named — never as a greyed-out "No".
+* **Review sheet** is `ratio cases` in the browser: the coverage report, inert
+  leaves, unexercised defeaters, and the expert's verdict column left empty. The
+  surface reads that column and never writes it back.
+
+The approval tab implements the four-step flow, and step 4 is the design: state
+who you are and in what capacity, see the diff against the last signed revision,
+see the digest — the hash the signature will *carry*, which is
+`RuleSet.approval_digest`, the payload with `status` forced to `approved` — and
+then type it back. Copying a hash is not reading one. Nothing is written before
+that, and the digest is displayed before and after. The surface does not compute
+the approval; it displays it, checks the retyped value, and posts an explicit
+confirmed action.
+
+The citation queue implements job (c): the three buckets with `-`, `?` and `!`,
+`via` shown on every advisory edge, quotes never summarised, and every caveat
+inline. Its confirm and reject buttons are **present and disabled**, and the
+panel above them says why — nothing writes `confirmed_by` yet. A disabled control
+that a reviewer can click and be told nothing about teaches less than one that
+visibly is not connected.
+
+Two things the surface deliberately refuses. It adds no verdict anywhere: the
+preview returns one of three words and the third is an abstention, and there is
+no boolean rendered as one. And it cannot dismiss the synthetic-corpus banner —
+the fixture material must never be readable as Australian law.
+
 ## What is not built
 
-`ui/` is an **empty directory**. There is no React project, no TypeScript, no
-components. Everything above is a design for a surface that does not exist.
-
-What does exist, and is what a UI would sit on: the CLI prints all of this in
-plain text today. `ratio authority Bramblewood` resolves the case name, prints
-the resolution so the reader can see which case the name was taken to mean, then
-prints the status, the caveat and the three buckets. `ratio cases` writes the
-review sheet. `ratio rules approve` prints the digest block. The MCP service
-layer returns the same data as JSON.
-
-The genuine gaps, in the order they would need closing:
-
+* **Job (a) is not built.** The lawyer asking a question has no surface. The
+  authoring surface shows a lawyer exactly the material the first section says
+  they should never see — nodes, CPTs, a coverage report — so it is not that
+  surface, and the search-and-answer surface remains a design.
 * **Nothing writes `confirmed_by`.** The field is honoured throughout the graph
-  and the verifier; no code path sets it. The review queue therefore cannot
-  actually be worked, only read. This is checkpoint G2 in
-  `docs/11-governance-assurance.md`, and it is the most consequential
-  unimplemented piece of the governance story.
-* **No approval has been written.** Both shipped artefacts — the ruleset and the
-  credence network — are `status: draft`. The approval mechanism is tested
-  (`tests/test_rules.py` pins the edited-after-approval behaviour) and unused.
+  and the verifier; no code path sets it. The review queue can be read and not
+  worked, which is why its buttons are disabled rather than absent. This is
+  checkpoint G2 in `docs/11-governance-assurance.md`, and it is the most
+  consequential unimplemented piece of the governance story.
+* **No approval has been written to a shipped artefact.** Both the ruleset and
+  the credence network are `status: draft`. The mechanism is exercised by the
+  surface and pinned by tests; the artefacts are not signed, and every screen says
+  so.
+* **The service has no identity layer.** The editor's name on a save is free
+  text, and the approval's approver is free text. That is adequate for a
+  single-operator local workspace and is not adequate for anything else; the
+  surface is bound to loopback with an explicit CORS origin list for that reason,
+  and `docs/10-aws-deployment-security.md` is where identity has to come from. An
+  approval whose author is unauthenticated is a record, not a signature.
+* **The renderer is lossy in one documented way.** Comments interleaved among
+  nodes are deleted on save; only the leading header run survives. The store's
+  docstring says so, and the tests measure the diff rather than implying it is
+  zero. A comment is prose no validation reads, so this is safe — but it is a
+  real edit the expert did not make.
 * **No CI gate.** `ratio eval` exits non-zero on a guardrail failure and
   `ratio cases` exits non-zero on an unhealthy coverage report, so the hooks
   exist, but nothing in the repository invokes them on a change.
-* **No accessibility work at all**, because there is no interface to make
-  accessible.
+* **No accessibility audit.** The design language carries the requirements it can
+  — no caveat in a tooltip, `role="alert"` on the unapproved banner, the proof
+  tree never behind a disclosure triangle, colour never the only signal — but
+  none of it has been tested with a screen reader or a keyboard-only pass, and an
+  untested claim about accessibility is a claim, not a property.

@@ -206,6 +206,64 @@ against the loaded corpus), by the MCP ruleset resource (as
 `unresolved_provenance`), and by tests. Unresolved provenance is **reported, never
 repaired**: a key that almost matches is still a key nobody checked.
 
+### And the quotation has to be the quotation
+
+Resolving the key closed the hole one level too early, and the way it failed is
+worth stating as a ladder because each rung is a weaker claim than it looks:
+
+1. Does the node **have** provenance? — `validate_ruleset`. Passed by a node
+   pointing at a string that does not exist.
+2. Does the provenance **name** something? — `provenance_problems`. Passed by a
+   node pointing at a real judgment and a real paragraph.
+3. Does the thing it names **say this**? — `anchor_problems`. The rung where
+   evidence actually begins, and the one nobody had climbed.
+
+Rung 3 is not rung 2 asked more firmly. A citation can resolve perfectly and
+still be the same defect as a fabricated one: `JNE24` makes the point that a
+*real* authority cited for a proposition it does not support is not a lesser
+error than a fake one. Here the failure was smaller and worse for being smaller.
+The shipped ruleset quoted a sentence of the Full Court as ending in a full stop;
+the source continues with a comma and goes on to say something further. So the
+quotation ended the court's sentence for it, which changes the grammar of the
+sentence being cited and hides that the court said more. `validate_ruleset` cannot
+see it — the node has provenance. `provenance_problems` cannot see it — the key
+resolves to `au/fcafc/2022/205` at [3]. A skim cannot see it, because it is
+*nearly* right.
+
+`anchor_problems(ruleset, *, judgments)` takes the corpus's judgments as a
+mapping rather than a knowledge base, for the same reason `provenance_problems`
+takes key sets: the rules module stays runnable with no corpus loaded. It reports
+three things, all of which were live in this repository at once:
+
+- a **paragraph the judgment does not contain** — `paragraph: 999` of a judgment
+  that ends at [20] resolves to a document and to nothing inside it, so the key
+  check passes and the pointer is dead;
+- an **ambiguous anchor** — a bare `[42]` in a judgment whose reasons are numbered
+  separately by each judge, where `[42]` names as many paragraphs as there are
+  authors and `AuthorityRef` has no field in which to say whose. Resolving it
+  arbitrarily is how a system ends up quoting a dissent as the majority, so it is
+  reported as unresolvable rather than guessed at;
+- a **quotation that is not in the paragraph**.
+
+Whether the quotation is there is decided by the verifier's comparison,
+`ratio.verify.grounding.normalise_quote` — NFKC, a punctuation fold for
+typographic shape (curly quotes, dashes, spaces) and whitespace collapsing. It
+folds punctuation *shape*, not punctuation *choice*: `normalise_quote(a + ".")`
+and `normalise_quote(a + ",")` are different strings, which is exactly why the
+defect above is caught rather than absorbed. The comparison is not fuzzy. A
+paraphrase is not a near miss; it is a different thing.
+
+Like `provenance_problems`, `anchor_problems` is **reported, never repaired**,
+and it is wired into all three of the places an expert can be in front of a
+ruleset: `ratio rules validate`, the MCP ruleset resource (as
+`unanchored_provenance`), and the authoring surface's save bar, where an
+unanchored quotation blocks the save. It only checks `judgment_paragraph` refs —
+a statutory provision has no paragraph text in the corpus to compare against, and
+a check that silently skips half the provenance while reading as though it
+covered all of it would be the same class of defect one level further up. What
+covers a quoted provision today is `provenance_problems`: the provision must
+exist, and its text is not compared.
+
 ## Known gaps
 
 - **One ruleset ships**, `firb.notifiable_action`, covering the s 18 notifiable-

@@ -109,15 +109,25 @@ ratio cases --ruleset firb.notifiable_action --limit 40
 
 # Score the system against the task suites (default: eval/tasks).
 ratio eval
+
+# The expert authoring surface: inspect, edit and sign the rulebook in a
+# browser. Needs the api extra. Edits land in .ratio-workspace/, never in
+# rulesets/, unless you pass --in-place.
+uv pip install -e ".[api]"
+cd ui && npm install && npm run build && cd ..
+ratio serve                       # http://127.0.0.1:8000
+
+# For frontend work, run the two separately; vite proxies /api to the service.
+#   ratio serve
+#   cd ui && npm run dev            # http://localhost:5173, hot reload
 ```
 
 Everything above runs offline with no API key, and every command is exercised by
 the test suite. The model-backed agent layer is opt-in (`.[llm]`) and is the
 *only* part that would require network access.
 
-The React authoring surface and the AWS deployment are designs, not commands —
-`ui/` and `infra/` are empty directories (see `docs/06-expert-authoring-surface.md`
-and `docs/10-aws-deployment-security.md`).
+The AWS deployment is a design, not a command — `infra/` is an empty directory
+(see `docs/10-aws-deployment-security.md`).
 
 ## What runs today, and what does not
 
@@ -137,8 +147,20 @@ system. Being precise about the line:
   exact (Clopper–Pearson) confidence intervals, paired significance testing
 - The MCP service layer: five resource templates and four tools, with
   refusals-as-data, tested without the SDK installed (`tests/test_mcp.py`)
+- The expert authoring surface: the authoring store, service and HTTP layer
+  (`ratio/authoring/`), tested without a web framework installed
+  (`tests/test_authoring.py`) and with one (`tests/test_authoring_api.py`);
+  the React surface in `ui/` sits on it
 
 **Designed, specified, not built here:**
+- Working the citation queue: nothing writes `AuthorityStatusRecord.confirmed_by`,
+  so the authoring surface can read a treatment edge and cannot confirm one — its
+  buttons are present and disabled, and say why (`docs/11`, checkpoint G2)
+- The lawyer-facing question-answering surface (`docs/06`, job (a)); the
+  authoring surface is not it, and deliberately shows a lawyer none of it
+- An identity layer for the authoring service: an editor's name and an approver's
+  name are free text today, which is adequate for one operator on loopback and is
+  not adequate for anything else (`docs/10-aws-deployment-security.md`)
 - OpenTelemetry tracing and the append-only audit ledger — `ratio/obs/` is an
   empty package; the design is `docs/09-observability-and-audit.md`
 - Live corpus ingestion of any kind (adapter interface only — see
@@ -146,8 +168,6 @@ system. Being precise about the line:
   a legal question before it is an engineering one, and for why AustLII's terms
   prohibit using its content for AI training or embedding)
 - Dense retrieval (interface + offline fallback; no embedding model bundled)
-- The React authoring surface — `ui/` is an empty directory; the design is
-  `docs/06-expert-authoring-surface.md`
 - AWS deployment — `infra/` is an empty directory; the design is
   `docs/10-aws-deployment-security.md`
 - Model-backed agent roles — `ratio/agents/` is an empty package; the design is
@@ -167,13 +187,14 @@ src/ratio/
   bn/                credence networks, exact inference, sensitivity
   agents/            orchestration and roles
   mcp_server/        Model Context Protocol tools and resources
+  authoring/         the expert authoring surface: store, service, HTTP transport
   obs/               tracing and the audit ledger
 docs/                the design, argument by argument
 rulesets/            encoded legal tests, with provenance
 data/fixtures/       synthetic judgments (clearly labelled — see below)
 eval/                harness, metrics, statistics
 eval/tasks/          the task suites `ratio eval` scores against
-ui/                  React + TypeScript expert authoring surface
+ui/                  React + TypeScript expert authoring surface (built by `npm run build`)
 infra/               AWS deployment skeleton
 ```
 

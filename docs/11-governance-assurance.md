@@ -40,11 +40,16 @@ What exists and runs, as at this revision:
 * an evaluation harness with abstention as a first-class outcome
   (`src/ratio/eval/`);
 * an MCP service layer that names its refusals and carries the nearest thing the
-  corpus does hold (`src/ratio/mcp_server/server.py`).
+  corpus does hold (`src/ratio/mcp_server/server.py`);
+* an expert authoring surface over the encoded rulebook — inspect, edit, preview,
+  review sheet and hash-bound approval — with the service behind it in
+  `src/ratio/authoring/` and the interface in `ui/` (`docs/06`).
 
-What does not exist: `ratio/obs/` (empty), `ratio/agents/` (empty), `ui/`
-(empty), `infra/` (empty). Every checkpoint below that depends on those is
-marked **designed**.
+What does not exist: `ratio/obs/` (empty), `ratio/agents/` (empty), `infra/`
+(empty), and the lawyer-facing question-answering surface of `docs/06` job (a).
+The authoring surface exists but cannot yet work the citation queue, because
+nothing writes `confirmed_by` — that is checkpoint G2 below. Every checkpoint
+below that depends on those is marked **designed**.
 
 ## ISO/IEC 42001:2023 — the AI management system
 

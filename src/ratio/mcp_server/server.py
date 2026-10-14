@@ -124,6 +124,26 @@ class RatioService:
             provision_keys=set(self.kb.provisions),
         )
 
+    def unanchored_provenance(self, ruleset_id: str) -> list[str]:
+        """Provenance that names a real paragraph and misquotes it.
+
+        The next question after :meth:`unresolved_provenance`, and a harder one:
+        "names something" and "names something that says this" are different
+        claims, and only the second is evidence. A citation that resolves and a
+        quotation that is not in the paragraph passes every structural check
+        there is.
+
+        Surfaced for the same reason as the other: a client must not be able to
+        render "this rule rests on that sentence" without carrying the fact that
+        the sentence does not say it.
+        """
+        from ratio.rules.engine import anchor_problems
+
+        ruleset = self.rulesets.get(ruleset_id)
+        if ruleset is None:
+            return []
+        return anchor_problems(ruleset, judgments=self.kb.judgments)
+
     def _require_judgment(self, key: str):
         judgment = self.kb.judgment_for_key(key) or self.kb.judgments.get(key)
         if judgment is None:
@@ -289,6 +309,12 @@ class RatioService:
             # anything, and a client showing a lawyer "this rule rests on
             # s 18" must not be showing them a key that resolves to nothing.
             "unresolved_provenance": self.unresolved_provenance(ruleset.id),
+            # And the narrower one: a reference that resolves to a real
+            # paragraph and quotes words that are not in it. Invisible to
+            # every check above -- the key names a document the corpus holds,
+            # so `unresolved_provenance` is empty -- and it survives a skim,
+            # because it is nearly right.
+            "unanchored_provenance": self.unanchored_provenance(ruleset.id),
         }
 
     # -- tools -------------------------------------------------------------

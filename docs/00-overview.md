@@ -124,6 +124,31 @@ the entire statutory basis of the only encoded rule pointed at a string that
 resolved to nothing, and `ratio rules validate` printed "ok". See
 `docs/04-rule-encoding.md`.
 
+**The quotation was not a quotation.** The fix above closed the hole one level
+too early. "Names something" and "names something that says this" are different
+claims, and only the second is evidence. The shipped ruleset quoted a sentence of
+the Full Court as ending in a full stop; the source continues with a comma and
+goes on to say something further, so the quotation ended the court's sentence for
+it — which changes the grammar of the sentence being cited, and hides that the
+court said more. `validate_ruleset` cannot see this (the node has provenance),
+`provenance_problems` cannot see it (the key resolves to a real judgment and a
+real paragraph, `au/fcafc/2022/205` at [3]), and a skim cannot see it, because it
+is *nearly* right. `ratio.rules.engine.anchor_problems` now asks the third
+question, and `ratio rules validate` fails on it. See
+`docs/04-rule-encoding.md`.
+
+**The documented approval flow could not produce a valid approval.** The one that
+matters most, because following the printed instructions exactly made the rulebook
+unevaluatable. `canonical_payload()` covers `status`, and signing off is precisely
+the act of changing `status` from `draft` to `approved` — so a digest taken over
+the draft, as `ratio rules approve` told the reader to do, could never match the
+revision afterwards. The resulting file reported `is_approved: false`, carried an
+approval whose hash matched nothing, and failed `validate_ruleset` with "it has
+been edited since sign-off" — which makes `RuleEngine.__init__` raise, so the
+rulebook could not be evaluated at all. `RuleSet.approval_digest` is the hash the
+revision will carry *once approved*, which is the hash a signature has to name.
+See `docs/06-expert-authoring-surface.md`.
+
 Each of these is a case of the same thing: the components were plausible,
 self-consistent, and wrong, and the only reason they were caught is that
 something independent was asked to disagree. That is the argument for the

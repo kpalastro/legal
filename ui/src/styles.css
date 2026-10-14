@@ -1,0 +1,703 @@
+/*
+ * The design language, and the three rules it encodes.
+ *
+ * Nothing here is decoration. The colour and weight decisions carry the same
+ * distinctions the CLI carries in its `-`, `?` and `!` prefixes, because a
+ * reviewer who has learned to read one surface should not have to learn the
+ * other.
+ *
+ * The rules:
+ *
+ *   1. A caveat is never in a tooltip. `docs/06` is explicit -- "a caveat in a
+ *      tooltip is a caveat nobody reads". It is impossible to put one there
+ *      without editing this file, because there is no tooltip styling.
+ *   2. "Not approved" is not an amber dot. It is a banner, in words, at the top
+ *      of every screen that shows an output derived from a rule.
+ *   3. `undetermined` never looks like an answer. It gets its own colour and its
+ *      own name, and it always arrives with the gaps that would resolve it.
+ */
+
+:root {
+  --bg: #12141a;
+  --bg-raised: #191c24;
+  --bg-sunken: #0d0f14;
+  --bg-input: #11141b;
+  --line: #2a2f3a;
+  --line-strong: #3b4250;
+
+  --fg: #e8eaf0;
+  --fg-muted: #9aa3b5;
+  --fg-faint: #6b7488;
+
+  --accent: #6ea8fe;
+  --accent-dim: #2c4a7c;
+
+  /* Counted, verified, resolved. */
+  --ok: #5fd1a0;
+  --ok-dim: #1d4a38;
+  /* Advisory: recorded, not counted. Confirming it makes it count. */
+  --advisory: #e3b341;
+  --advisory-dim: #4d3d12;
+  /* Hierarchy-blocked: confirming it will NOT change anything. */
+  --blocked: #d98a5f;
+  --blocked-dim: #4a2f1e;
+  /* A defect in the encoding, or a refusal. */
+  --stop: #f2777a;
+  --stop-dim: #4d1f21;
+  /* Undetermined: an abstention, rendered as an abstention. */
+  --unknown: #9d8df1;
+  --unknown-dim: #332c52;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: Georgia, "Times New Roman", serif;
+
+  --radius: 6px;
+  --gap: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------- shell -- */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 10px 16px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.topbar h1 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.topbar .spacer {
+  flex: 1 1 auto;
+}
+
+.store-line {
+  font: 11px/1.5 var(--mono);
+  color: var(--fg-faint);
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raised);
+  padding: 0 16px;
+  flex: 0 0 auto;
+  overflow-x: auto;
+}
+
+.tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 9px 14px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabs button:hover {
+  color: var(--fg);
+}
+
+.tabs button[aria-selected="true"] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+.tabs .badge {
+  margin-left: 6px;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ------------------------------------------------------------- banners -- */
+
+/*
+ * The approval banner. Docs/06: "The UI must show 'not approved' wherever it
+ * shows a rule conclusion, and must not soften it into an amber dot."
+ */
+.banner {
+  padding: 9px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.banner strong {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.banner.unapproved {
+  background: var(--stop-dim);
+  color: #ffd9da;
+  border-bottom-color: #6b2c2e;
+}
+
+.banner.synthetic {
+  background: var(--unknown-dim);
+  color: #d8d2ff;
+  border-bottom-color: #463d6e;
+}
+
+.banner.note {
+  background: var(--bg-raised);
+  color: var(--fg-muted);
+}
+
+/* --------------------------------------------------------- three columns -- */
+
+/*
+ * Tree | editor | provenance rail, side by side and always all three. Docs/06:
+ * "If the provenance is one click away in a side panel, the check happens. If it
+ * is one click away in a different view, it does not." A layout where the rail
+ * collapses behind a tab would be the second thing.
+ */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(230px, 300px) minmax(360px, 1fr) minmax(300px, 460px);
+  gap: 1px;
+  background: var(--line);
+  height: 100%;
+  min-height: 0;
+}
+
+.col {
+  background: var(--bg);
+  overflow: auto;
+  padding: 12px;
+  min-width: 0;
+}
+
+.col-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  margin: 0 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .columns {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .col {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* ---------------------------------------------------------------- tree -- */
+
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+.tree-node {
+  padding: 3px 0;
+}
+
+.tree-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+
+.tree-button:hover {
+  background: var(--bg-raised);
+  color: var(--fg);
+}
+
+.tree-button[aria-current="true"] {
+  background: var(--accent-dim);
+  color: #fff;
+}
+
+.tree-button .id {
+  font: 11px/1.4 var(--mono);
+  color: var(--fg-faint);
+  display: block;
+}
+
+.tree-button[aria-current="true"] .id {
+  color: #c9dcff;
+}
+
+.tree .kind {
+  font: 10px/1 var(--mono);
+  color: var(--fg-faint);
+  margin-left: 6px;
+}
+
+.tree-branch-label {
+  font: 10px/1.6 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  margin: 6px 0 2px 6px;
+}
+
+/* --------------------------------------------------------------- chips -- */
+
+.badge {
+  display: inline-block;
+  font: 10px/1.6 var(--mono);
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: var(--ok-dim);
+  background: #12261e;
+}
+.badge.advisory {
+  color: var(--advisory);
+  border-color: var(--advisory-dim);
+  background: #241f0d;
+}
+.badge.blocked {
+  color: var(--blocked);
+  border-color: var(--blocked-dim);
+  background: #241709;
+}
+.badge.stop {
+  color: var(--stop);
+  border-color: var(--stop-dim);
+  background: #2a1214;
+}
+.badge.unknown {
+  color: var(--unknown);
+  border-color: var(--unknown-dim);
+  background: #1e1a33;
+}
+.badge.synth {
+  color: var(--unknown);
+  border-color: var(--unknown-dim);
+}
+
+/* --------------------------------------------------------- status marks -- */
+
+/*
+ * The `-`, `?`, `!` vocabulary from `status_report_lines`, and the OK/LIM/WARN/
+ * STOP/???? icon set. Both are carried rather than reinvented: a reviewer
+ * reading the CLI and the surface reads the same language.
+ */
+.mark {
+  font: 12px/1 var(--mono);
+  font-weight: 600;
+  display: inline-block;
+  width: 1.4em;
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.mark.counted,
+.mark.ok {
+  color: var(--ok);
+}
+.mark.advisory {
+  color: var(--advisory);
+}
+.mark.blocked {
+  color: var(--blocked);
+}
+.mark.stop {
+  color: var(--stop);
+}
+.mark.unknown {
+  color: var(--unknown);
+}
+
+.status-line {
+  font: 12px/1.6 var(--mono);
+}
+
+/* -------------------------------------------------------------- forms -- */
+
+label.field {
+  display: block;
+  margin-bottom: 10px;
+}
+
+label.field > span.label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-faint);
+  margin-bottom: 3px;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+.tree-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+textarea {
+  min-height: 68px;
+  resize: vertical;
+  font: 13px/1.55 var(--sans);
+}
+
+textarea.mono {
+  font: 12px/1.5 var(--mono);
+}
+
+input.mono {
+  font: 12px/1.5 var(--mono);
+}
+
+button.act {
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button.act:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+button.act:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.act.primary {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.act.danger {
+  border-color: var(--stop-dim);
+  color: #ffc9ca;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 10px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--fg-faint);
+  margin: 2px 0 10px;
+}
+
+/* --------------------------------------------------------------- panels -- */
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.panel > h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-faint);
+}
+
+.panel.defect {
+  border-color: #6b2c2e;
+  background: #1d1113;
+}
+
+.panel.warn {
+  border-color: var(--advisory-dim);
+  background: #1a1608;
+}
+
+.problems {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.problems li {
+  margin-bottom: 4px;
+}
+
+.problem-code {
+  font: 11px/1.5 var(--mono);
+  color: var(--fg-muted);
+}
+
+/* -------------------------------------------------------------- quotes -- */
+
+/*
+ * "The quote travels with the edge, always, and never summarised. The quote is
+ * not decoration; it is the evidence."
+ */
+.quote {
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.65;
+  border-left: 3px solid var(--line-strong);
+  padding: 2px 0 2px 12px;
+  margin: 8px 0;
+  color: #dfe3ec;
+  white-space: pre-wrap;
+}
+
+.quote.missing {
+  border-left-color: var(--stop);
+  color: #ffd9da;
+}
+
+.quote .absent {
+  color: var(--stop);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.prov-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  font: 12px/1.6 var(--mono);
+  color: var(--fg-muted);
+}
+
+.prov-block {
+  margin-bottom: 14px;
+}
+
+.prov-block.foreign {
+  opacity: 0.55;
+}
+
+.caveat {
+  border-left: 3px solid var(--advisory);
+  padding: 4px 0 4px 10px;
+  margin: 6px 0;
+  color: #e8dcc0;
+  font-size: 13px;
+}
+
+.caveat.blocked {
+  border-left-color: var(--blocked);
+  color: #ecd7c8;
+}
+
+/* ---------------------------------------------------------------- table -- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 4px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--bg-raised);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-faint);
+  position: sticky;
+  top: 0;
+}
+
+td.mono,
+th.mono {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* The expert's column: deliberately blank. */
+td.verdict {
+  min-width: 90px;
+  background: var(--bg-sunken);
+}
+
+td.verdict .row {
+  gap: 4px;
+}
+
+.conf {
+  color: var(--fg-faint);
+  font: 11px/1.5 var(--mono);
+}
+
+.diff-add {
+  color: var(--ok);
+  font: 12px/1.6 var(--mono);
+}
+.diff-del {
+  color: var(--stop);
+  font: 12px/1.6 var(--mono);
+}
+
+.empty {
+  color: var(--fg-faint);
+  font-style: italic;
+  padding: 10px 0;
+}
+
+.undetermined {
+  color: var(--unknown);
+  font-weight: 600;
+}
+
+.error-box {
+  margin: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--stop-dim);
+  background: #1d1113;
+  border-radius: var(--radius);
+}
+
+.digest {
+  font: 12px/1.6 var(--mono);
+  word-break: break-all;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 8px;
+  user-select: all;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* An exception is a defeater, not a conjunct. It reads differently. */
+.defeaters {
+  margin: 10px 0 14px;
+  padding: 8px 10px;
+  border: 1px dashed var(--blocked-dim);
+  border-radius: var(--radius);
+  background: #1a1209;
+}
+
+.defeaters > .defeaters-say {
+  font-size: 12px;
+  color: #ecd7c8;
+  margin-bottom: 6px;
+}

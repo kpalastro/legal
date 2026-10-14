@@ -62,11 +62,14 @@ it can only answer them in separate commands.
 This is the smallest of the five and the most visible, because it is the join
 between the two halves of the "both rules and Bayesian" decision.
 
-### 4. The agent layer, the ledger, and the surfaces
+### 4. The agent layer, the ledger, and the remaining surfaces
 
-`agents/`, `obs/`, `ui/` and `infra/` are empty directories with designs:
-`docs/07-agent-orchestration-mcp.md`, `docs/09-observability-and-audit.md`,
-`docs/06-expert-authoring-surface.md`, `docs/10-aws-deployment-security.md`.
+`agents/`, `obs/` and `infra/` are empty directories with designs:
+`docs/07-agent-orchestration-mcp.md`, `docs/09-observability-and-audit.md` and
+`docs/10-aws-deployment-security.md`. The expert authoring surface from
+`docs/06-expert-authoring-surface.md` is **built** — the interface in `ui/`, the
+service in `src/ratio/authoring/`, served by `ratio serve` — and what remains of
+`docs/06` is its job (a), the lawyer asking a question, which is a design.
 
 Of these, the one I would build first is **not** the agent layer. It is the
 **audit ledger**. The reasoning is the same as the reasoning for the harness: a
